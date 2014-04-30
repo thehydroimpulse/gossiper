@@ -19,9 +19,9 @@ For many systems and tasks, this isn't desireable. There are situations where ha
 
 ## Why Rust?
 
-[Rust](http://www.rust-lang.org/) is Mozilla's new systems programming language that focuses on safety, concurrency and practicality. It doesn't have GC (but you *can* have task-local GC!), in the realm as C++, but without any of the issues and complexities.
+[Rust](http://www.rust-lang.org/) is Mozilla's new systems programming language that focuses on safety, concurrency and practicality. It doesn't have GC (but you *can* have task-local GC!), in the realm as C++, but without many of the issues and complexities.
 
-I believe Rust is perfect for distributed systems which are highly-performant. Because Rust avoids the pitfalls on mutable, shared memory, you're able to escape a lot of bottlenecks involved in mutexes.
+I believe Rust is perfect for distributed systems which are highly performant and fault tolerant.
 
 ## Getting Started
 
@@ -29,15 +29,11 @@ WIP
 
 ## Protocol
 
-The protocol is fairly similar to Riak's version of a gossip protocol as originally defined. It uses a number of different elements to allow a large number of failures within a given cluster and minimizes the amount of communication nodes have to perform.
-
-
-### Peers
-
-Let's start with peers. These are members within a single cluster. Each of them are equal, compared to a strong consistency-based protocol, where they announce leaders and followers.
-
-When connecting to a gossip cluster, you simply need to know about a *single* member in it. Cassandra, for example, typically recommends you to define a single starting peer member for each new node. However, in this case, it's not required.
-
+* [Introduction](docs/introduction.md)
+* [Peers](docs/peers.md)
+* [Cluster](docs/cluster.md)
+* [Graph](docs/graph.md)
+* [Transport](docs/transports.md)
 
 ## Other Implementations
 
