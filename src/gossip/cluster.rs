@@ -1,4 +1,3 @@
-
 use server::Server;
 
 pub struct Cluster {
