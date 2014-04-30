@@ -27,7 +27,7 @@ I believe Rust is perfect for distributed systems which are highly performant an
 
 WIP
 
-## Protocol
+## Documentation
 
 * [Introduction](docs/introduction.md)
 * [Peers](docs/peers.md)
