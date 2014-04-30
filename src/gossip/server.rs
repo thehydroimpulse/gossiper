@@ -53,7 +53,10 @@ pub struct Metadata {
 impl Metadata {
     pub fn new() -> Metadata {
         Metadata {
-            eager_set: HashSet::new()
+            eager_set: HashSet::new(),
+            lazy_set: HashSet::new(),
+            exchanges: Vec::new(),
+            outstanding: Vec::new()
         }
     }
 }
