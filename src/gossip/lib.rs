@@ -12,3 +12,4 @@ extern crate collections;
 
 mod cluster;
 mod server;
+mod metadata;
