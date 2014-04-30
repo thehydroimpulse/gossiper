@@ -10,6 +10,9 @@ WIP
 
 extern crate collections;
 
-mod cluster;
-mod server;
-mod metadata;
+pub mod cluster;
+pub mod server;
+pub mod metadata;
+pub mod transport;
+pub mod error;
+pub mod tcp;
