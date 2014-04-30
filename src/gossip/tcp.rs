@@ -1,4 +1,4 @@
-use error::{GossipResult};
+use error::{GossipResult,GossipError};
 use std::io::net::ip::IpAddr;
 use transport::Transport;
 
@@ -7,5 +7,7 @@ pub struct TcpTransport {
 }
 
 impl Transport for TcpTransport {
-    pub fn join<T>(&self, addr: IpAddr, port: u16) -> GossipResult<T>;
+    fn join<T>(&self, addr: IpAddr, port: u16) -> GossipResult<T> {
+        Err(GossipError::new("not implemented.".to_owned(), 5))
+    }
 }
