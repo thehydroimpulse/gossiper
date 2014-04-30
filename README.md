@@ -19,13 +19,41 @@ For many systems and tasks, this isn't desireable. There are situations where ha
 
 ## Why Rust?
 
-[Rust](http://www.rust-lang.org/) is Mozilla's new systems programming language that focuses on safety, concurrency and practicality. It doesn't have GC (but you *can* have task-local GC!), in the realm as C++, but without many of the issues and complexities.
+[Rust](http://www.rust-lang.org/) is Mozilla's new systems programming language that focuses on safety, concurrency and practicality. It doesn't have GC (but you *can* have task-local GC!); it's also in the same realm as C++, but without many of the issues and complexities.
 
 I believe Rust is perfect for distributed systems which are highly performant and fault tolerant.
 
 ## Getting Started
 
-WIP
+## Building Gossip.rs
+
+Currently, Rust doesn't have a useable package manager *yet* (one is in the works). That means Makefiles are the current solution :(.
+
+```rust
+make
+```
+
+This will produce an `x.rlib` file under the `target` folder. You can then add this path/file to another Rust project.
+
+## Importing Gossip.rs
+
+From another Rust crate, you'll need to let Rust know about the gossip crate.
+
+```rust
+// foo/lib.rs
+#![crate_id = "foo"]
+
+extern crate gossip;
+```
+
+Building `foo` is pretty simple:
+
+```
+rustc -Ltarget foo/lib.rs
+```
+
+Replacing `target` with the previous target folder that holds the gossip `.rlib` library.
+
 
 ## Documentation
 
