@@ -15,7 +15,7 @@ The concept goes like this:
 
 That's the basic workflow for gossip protocols, except, we're talking about computers and networks. This is how a network of computers can communicate without having a leader/master node. There are obvious trade-offs here. By achieving the no-leader semantics, you effectively have no control on how effective messages are getting across the network and who hasn't received them. That's the lack of consistency, yet you gain high-availability. It doesn't matter if nodes go down, there aren't any leaders, which means no quorum needs to be held, and no election processes need to happen. On top of that, any node is able to accept requests for information (i.e database queries).
 
-For many systems and tasks, this isn't desireable. There are situations where having a consistent cluster is much simply and more effective.
+For many systems and tasks, this isn't desireable. There are situations where having a consistent cluster is much simpler and more effective.
 
 ## Why Rust?
 
