@@ -1,7 +1,8 @@
 # Gossip.rs [![Build Status](https://travis-ci.org/TheHydroImpulse/gossip.rs.svg)](https://travis-ci.org/TheHydroImpulse/gossip.rs)
 
-Gossip protocol written in Rust.
+**Note**: This is a work-in-progress. It's not yet useable.
 
+Gossip protocol written in Rust.
 
 ## What's A Gossip Protocol?
 
@@ -21,7 +22,9 @@ For many systems and tasks, this isn't desireable. There are situations where ha
 
 [Rust](http://www.rust-lang.org/) is Mozilla's new systems programming language that focuses on safety, concurrency and practicality. It doesn't have GC (but you *can* have task-local GC!); it's also in the same realm as C++, but without many of the issues and complexities.
 
-I believe Rust is perfect for distributed systems which are highly performant and fault tolerant.
+I believe Rust is perfect for distributed systems which are highly performant and fault tolerant. When talking about IO, most languages have (say C, C++, etc...) have support for native threads (pthreads, for example). However, there have been newer languages that support more elaborate concurrency primitives in the form of green threads (Go, for example). But there's an obvious trade-off here. You either have native threads *or* green threads. Systems built in these languages are locked to that implementation.
+
+Rust, on the other hand, doesn't have this limitation. It ships with a single API for managing tasks (akin to threads), but, it has two separate implementations: green and native. This allows someone to build systems without picking either of them. The user gets to pick based on which crate they bundle.
 
 ## Getting Started
 
@@ -62,6 +65,17 @@ Replacing `target` with the previous target folder that holds the gossip `.rlib`
 * [Cluster](docs/cluster.md)
 * [Graph](docs/graph.md)
 * [Transport](docs/transports.md)
+
+## Use Cases
+
+Because this is an agnostic gossip protocol (i.e., it can be used for any system built on-top of it.), we can't make certain guarantees that some systems make.
+
+In the original Plumtree paper, it does simulations around 10,000+ node clusters in a P2P system. Because of the large number of peers, the cluster can't be fully connected (i.e., nodes don't have the possibility to communicate with every other node in the cluster.). Thus, it's partially connected; each node has the ability to communicate with a small subset of every other node.
+
+However, when dealing with, say database clusters, you'll never really have 10,000+ nodes in a single cluster. A more realistic number might be a few hundred, maybe a little more. That allows a cluster to be fully connected (i.e., each node may talk to every other node.).
+
+This library will focus on the second use-case for now (having a smaller number of nodes.) but could expand to having the ability to have a partially connected cluster.
+
 
 ## Other Implementations
 
