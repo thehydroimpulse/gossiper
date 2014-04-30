@@ -8,5 +8,7 @@ Gossip protocol engine written in Rust.
 WIP
 */
 
+extern crate collections;
+
 mod cluster;
 mod server;
