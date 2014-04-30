@@ -1,4 +1,4 @@
-# Gossip.rs
+# Gossip.rs [![Build Status](https://travis-ci.org/TheHydroImpulse/gossip.rs.svg)](https://travis-ci.org/TheHydroImpulse/gossip.rs)
 
 Gossip protocol written in Rust.
 
