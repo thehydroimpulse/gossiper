@@ -7,7 +7,6 @@ use tcp::TcpTransport;
 
 /// A server/node within a single gossip cluster. Each server has
 /// a fast knowledge of it's cluster, which is all stored here.
-#[deriving(Show,Eq)]
 pub struct Server {
     addr: SocketAddr,
     cluster: Option<Cluster>,
@@ -20,6 +19,12 @@ impl Server {
     /// This function will **not** do any connection initializations. This
     /// is handled by further methods.
     pub fn new(ip: IpAddr, port: u16) -> Server {
+
+        let tcp = match TcpTransport::new(ip, port) {
+            Ok(e) => e,
+            Err(err) => fail!("{}", err)
+        };
+
         Server {
             // We're handling the creation of the SocketAddr to allow
             // for a more friendly API.
@@ -31,7 +36,7 @@ impl Server {
             // By default, we aren't joining a cluster yet.
             cluster: None,
             metadata: Metadata::new(),
-            transport: TcpTransport::new()
+            transport: tcp
         }
     }
 }

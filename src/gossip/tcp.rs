@@ -1,17 +1,29 @@
 use error::{GossipResult,GossipError};
-use std::io::net::ip::IpAddr;
+use std::io::net::ip::{IpAddr, SocketAddr};
 use transport::Transport;
+use std::io::{TcpListener, TcpStream};
+use std::io::{Acceptor, Listener};
+use std::io::net::tcp::TcpAcceptor;
+use std::io::IoResult;
 
-#[deriving(Eq,Show,Hash)]
 pub struct TcpTransport {
-    connected: bool
+    acceptor: TcpAcceptor
 }
 
 impl TcpTransport {
-    pub fn new() -> TcpTransport {
-        TcpTransport {
-            connected: false
-        }
+    /// Each server starts up their own Tcp server for communication.
+    pub fn new(addr: IpAddr, port: u16) -> IoResult<TcpTransport> {
+        let addr = SocketAddr {
+            ip: addr,
+            port: port
+        };
+
+        let listener = try!(TcpListener::bind(addr));
+        let acceptor = try!(listener.listen());
+
+        Ok(TcpTransport {
+            acceptor: acceptor
+        })
     }
 }
 
