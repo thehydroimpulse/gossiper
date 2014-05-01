@@ -2,6 +2,8 @@ use std::io::net::ip::IpAddr;
 use std::io::net::ip::SocketAddr;
 use cluster::Cluster;
 use metadata::Metadata;
+use transport::Transport;
+use tcp::TcpTransport;
 
 /// A server/node within a single gossip cluster. Each server has
 /// a fast knowledge of it's cluster, which is all stored here.
@@ -9,11 +11,11 @@ use metadata::Metadata;
 pub struct Server {
     addr: SocketAddr,
     cluster: Option<Cluster>,
-    metadata: Metadata
+    metadata: Metadata,
+    transport: TcpTransport
 }
 
 impl Server {
-
     /// Create a new server given an address (ipv4 or ipv6) and a port.
     /// This function will **not** do any connection initializations. This
     /// is handled by further methods.
@@ -28,7 +30,8 @@ impl Server {
 
             // By default, we aren't joining a cluster yet.
             cluster: None,
-            metadata: Metadata::new()
+            metadata: Metadata::new(),
+            transport: TcpTransport::new()
         }
     }
 }
@@ -38,6 +41,7 @@ impl Server {
 mod test {
     use super::*;
     use std::io::net::ip::Ipv4Addr;
+    use tcp::TcpTransport;
 
     #[test]
     fn new_server() {

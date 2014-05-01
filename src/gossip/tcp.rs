@@ -2,8 +2,17 @@ use error::{GossipResult,GossipError};
 use std::io::net::ip::IpAddr;
 use transport::Transport;
 
+#[deriving(Eq,Show,Hash)]
 pub struct TcpTransport {
     connected: bool
+}
+
+impl TcpTransport {
+    pub fn new() -> TcpTransport {
+        TcpTransport {
+            connected: false
+        }
+    }
 }
 
 impl Transport for TcpTransport {

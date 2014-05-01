@@ -5,6 +5,7 @@ use std::io::net::ip::IpAddr;
 /// which a transport must implement. By default, Tcp is the default transport
 /// used. However, once an HTTP server is implemented in Rust, it could be
 /// an option.
+#[deriving(Eq,Show,Hash)]
 pub trait Transport {
     /// This method is called on a `Server` type. This will join the server
     /// with a cluster given a peer node. This may populate the cluster property
