@@ -1,7 +1,7 @@
 use std::io::net::ip::IpAddr;
 use std::io::net::ip::SocketAddr;
 use cluster::Cluster;
-use metadata::Metadata;
+use state::State;
 use transport::Transport;
 use tcp::TcpTransport;
 
@@ -10,7 +10,7 @@ use tcp::TcpTransport;
 pub struct Server {
     addr: SocketAddr,
     cluster: Option<Cluster>,
-    metadata: Metadata,
+    state: State,
     transport: TcpTransport
 }
 
@@ -35,7 +35,7 @@ impl Server {
 
             // By default, we aren't joining a cluster yet.
             cluster: None,
-            metadata: Metadata::new(),
+            state: State::new(),
             transport: tcp
         }
     }

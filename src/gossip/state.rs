@@ -1,7 +1,7 @@
 use collections::HashSet;
 
 #[deriving(Show,Eq)]
-pub struct Metadata {
+pub struct State {
     // An eager set contains the peers that the current node will
     // communicate with when a new message comes in. The goal is to form
     // a [Spanning Tree](https://en.wikipedia.org/wiki/Spanning_tree)
@@ -38,9 +38,9 @@ pub struct Metadata {
     outstanding: Vec<~str>
 }
 
-impl Metadata {
-    pub fn new() -> Metadata {
-        Metadata {
+impl State {
+    pub fn new() -> State {
+        State {
             eager_set: HashSet::new(),
             lazy_set: HashSet::new(),
             exchanges: Vec::new(),
