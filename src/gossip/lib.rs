@@ -13,6 +13,4 @@ extern crate collections;
 pub mod cluster;
 pub mod server;
 pub mod state;
-pub mod transport;
 pub mod error;
-pub mod tcp;
