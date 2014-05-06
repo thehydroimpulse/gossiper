@@ -1,4 +1,13 @@
-#[deriving(Show,Eq,Hash)]
+use server::Server;
+
 pub struct Cluster {
-    nodes: Vec<()>
+    nodes: Vec<Server>
+}
+
+impl Cluster {
+    pub fn new() -> Cluster {
+        Cluster {
+            nodes: vec![]
+        }
+    }
 }
