@@ -1,3 +1,0 @@
-# Peers
-
-WIP
