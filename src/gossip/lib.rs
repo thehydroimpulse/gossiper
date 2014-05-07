@@ -18,3 +18,4 @@ pub mod state;
 pub mod error;
 pub mod message;
 pub mod broadcast;
+pub mod protocol;
