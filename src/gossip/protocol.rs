@@ -1,3 +1,5 @@
 pub enum Protocol {
-    Version(uint)
+    Version(uint),
+    Binary(Vec<u8>),
+    Text(~str)
 }

@@ -12,10 +12,11 @@ extern crate collections;
 extern crate uuid;
 extern crate rand;
 
-pub mod cluster;
 pub mod server;
 pub mod state;
-pub mod error;
+pub mod util;
 pub mod message;
 pub mod broadcast;
 pub mod protocol;
+pub mod transport;
+pub mod tcp;

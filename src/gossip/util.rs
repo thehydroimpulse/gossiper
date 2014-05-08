@@ -4,8 +4,14 @@ use std::fmt;
 pub type GossipResult<T> = Result<T, GossipError>;
 
 pub enum Error {
-
+    NotImplemented
 }
+
+macro_rules! unimplemented(
+    () => (
+        return Err(GossipError::new("not implemented".to_owned(), None))
+    )
+)
 
 /// A gossip error represents **any** errors that happen within this system.
 ///
@@ -13,11 +19,11 @@ pub enum Error {
 ///        that be an enum instead. With things like `FailedToJoin`.
 pub struct GossipError {
     message: ~str,
-    error: Error
+    error: Option<Error>
 }
 
 impl GossipError {
-    pub fn new(message: ~str, error: Error) -> GossipError {
+    pub fn new(message: ~str, error: Option<Error>) -> GossipError {
         GossipError {
             message: message,
             error: error
