@@ -1,13 +1,13 @@
 use std::io::{TcpListener, TcpStream};
 use std::io::net::ip::{SocketAddr, IpAddr};
 
-pub struct Connection {
+pub struct TcpConnection {
     stream: TcpStream,
     addr: SocketAddr
 }
 
-impl Connection {
-    pub fn new(ip: IpAddr, port: u16) -> Connection {
+impl TcpConnection {
+    pub fn new(ip: IpAddr, port: u16) -> TcpConnection {
         let addr = SocketAddr {
             ip: ip,
             port: port
@@ -18,7 +18,7 @@ impl Connection {
             Err(err) => fail!("Tcp stream failed to connect: {}", err)
         };
 
-        Connection {
+        TcpConnection {
             stream: stream,
             addr: addr
         }
@@ -41,6 +41,6 @@ mod test {
         let addr = SocketAddr { ip: ip, port: port };
         let acceptor = TcpListener::bind(addr).listen().unwrap();
 
-        Connection::new(ip, port);
+        TcpConnection::new(ip, port);
     }
 }
