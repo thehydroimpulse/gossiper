@@ -1,4 +1,4 @@
-use std::str::Chars;
+use std::str::{Chars, from_char};
 
 pub enum Protocol {
     Version(uint),
@@ -11,6 +11,12 @@ pub enum TextProtocol {
     Value(Vec<u8>)
 }
 
+#[deriving(Eq,Show)]
+pub enum TextAst {
+    Empty,
+    KeyVal(~str, ~str)
+}
+
 // The TextProtocol's parser. All we need to spit out is a key->value combination.
 // Because we allow streaming within the protocol, we'll only return each
 // key->value pair once we have fully parsed both.
@@ -19,7 +25,7 @@ pub enum TextProtocol {
 // but not the key.
 //
 // ```rust
-// Parser::new()
+// Parser::new("hello world")
 // ```
 pub struct Parser<'a> {
     input: &'a str,
@@ -33,6 +39,42 @@ impl<'a> Parser<'a> {
             iter: input.chars()
         }
     }
+
+    pub fn parse(&mut self) -> TextAst {
+
+        if self.input.len() == 0 {
+            return Empty;
+        }
+
+        let mut key = "".to_owned();
+        let mut value = "".to_owned();
+        let mut c = self.iter.next().unwrap();
+
+        if c.is_alphanumeric() {
+            key = key.append(from_char(c));
+            while c != '[' {
+                c = self.iter.next().unwrap();
+
+                if c != '[' {
+                    key = key.append(from_char(c));
+                }
+            }
+
+            // Start the value
+            if c == '[' {
+                while c != ']' {
+                    c = self.iter.next().unwrap();
+
+                    if c != ']' {
+                        value = value.append(from_char(c));
+                    }
+                }
+            }
+        }
+
+        KeyVal(key, value)
+    }
+
 }
 
 #[cfg(test)]
@@ -43,5 +85,17 @@ mod test {
     fn new_parser() {
         let mut parser = Parser::new("hello world");
         assert_eq!(parser.iter.next().unwrap(), 'h');
+    }
+
+    #[test]
+    fn parser_parse_empty_string() {
+        let mut parser = Parser::new("");
+        assert_eq!(parser.parse(), Empty);
+    }
+
+    #[test]
+    fn parse_simple_kv() {
+        let mut parser = Parser::new("Version[1]");
+        assert_eq!(parser.parse(), KeyVal("Version".to_owned(), "1".to_owned()));
     }
 }
