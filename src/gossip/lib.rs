@@ -15,7 +15,7 @@ extern crate rand;
 
 pub mod server;
 pub mod state;
-pub mod util;
+mod util;
 pub mod message;
 pub mod broadcast;
 pub mod protocol;
