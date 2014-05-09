@@ -1,15 +1,23 @@
+use std::io::net::ip::{SocketAddr, IpAddr};
+use std::io::{TcpListener, TcpStream, Listener, Acceptor};
+use std::io::net::tcp::TcpAcceptor;
+
 use transport::Transport;
-use std::io::net::ip::IpAddr;
 use util::GossipResult;
 
 pub struct TcpTransport {
-    running: bool
+    acceptor: TcpAcceptor
 }
 
 impl TcpTransport {
-    pub fn new() -> TcpTransport {
+    pub fn new(ip: IpAddr, port: u16) -> TcpTransport {
+        let addr = SocketAddr {
+            ip: ip,
+            port: port
+        };
+
         TcpTransport {
-            running: false
+            acceptor: TcpListener::bind(addr).listen().unwrap()
         }
     }
 }
