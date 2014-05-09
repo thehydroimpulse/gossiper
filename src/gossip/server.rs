@@ -5,6 +5,7 @@ use std::io::{Listener};
 use std::io::net::tcp::TcpAcceptor;
 use std::io::IoResult;
 use std::io::{Listener, Acceptor};
+use std::cast;
 
 use state::State;
 use message::Message;
@@ -21,7 +22,8 @@ pub struct Server {
     // The state will contain the spanning tree implementation and all the members
     // we'll be communicating with.
     state: State,
-    transport: Option<~Transport>
+    transport: Option<~Transport>,
+    peers: Vec<Server>
 }
 
 impl Server {
@@ -38,7 +40,8 @@ impl Server {
             // for a more friendly API.
             addr: addr,
             state: State::new(),
-            transport: transport
+            transport: transport,
+            peers: vec![]
         };
 
         server

@@ -22,7 +22,7 @@ pub enum TextProtocol {
 pub struct Parser {
     input: Vec<u8>,
     // This is the current character's position
-    position: 0,
-    curr_ch: '',
-    prev_ch: ''
+    position: int,
+    curr_ch: char,
+    prev_ch: char
 }
