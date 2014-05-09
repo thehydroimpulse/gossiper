@@ -1,4 +1,6 @@
 use std::str::{Chars, from_char};
+use collections::hashmap::HashMap;
+use util::{GossipResult, GossipError};
 
 pub enum Protocol {
     Version(uint),
@@ -40,34 +42,29 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> TextAst {
+    pub fn parse_kv(&mut self, ch: char) -> TextAst {
 
-        if self.input.len() == 0 {
-            return Empty;
+        // Instantiate default strings that we can append to.
+        let mut key   = "".to_owned();
+        let mut value = "".to_owned();
+        let mut c     = ch;
+
+        key = key.append(from_char(c));
+        while c != '[' {
+            c = self.iter.next().unwrap();
+
+            if c != '[' {
+                key = key.append(from_char(c));
+            }
         }
 
-        let mut key = "".to_owned();
-        let mut value = "".to_owned();
-        let mut c = self.iter.next().unwrap();
-
-        if c.is_alphanumeric() {
-            key = key.append(from_char(c));
-            while c != '[' {
+        // Start the value
+        if c == '[' {
+            while c != ']' {
                 c = self.iter.next().unwrap();
 
-                if c != '[' {
-                    key = key.append(from_char(c));
-                }
-            }
-
-            // Start the value
-            if c == '[' {
-                while c != ']' {
-                    c = self.iter.next().unwrap();
-
-                    if c != ']' {
-                        value = value.append(from_char(c));
-                    }
+                if c != ']' {
+                    value = value.append(from_char(c));
                 }
             }
         }
@@ -75,11 +72,38 @@ impl<'a> Parser<'a> {
         KeyVal(key, value)
     }
 
+    pub fn parse(&mut self) -> GossipResult<HashMap<~str, ~str>> {
+
+        if self.input.len() == 0 {
+            return Err(GossipError::new("Failed to parse an empty string".to_owned(), None));
+        }
+
+        let mut kv = HashMap::<~str, ~str>::new();
+        let mut c = self.iter.next().unwrap();
+
+        if c.is_alphanumeric() {
+            let mut key = "".to_owned();
+            let mut value = "".to_owned();
+
+            match self.parse_kv(c) {
+                KeyVal(k, v) => {
+                    key = k;
+                    value = v;
+                },
+                _ => {}
+            }
+
+            kv.insert(key, value);
+        }
+
+        Ok(kv)
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use util::GossipError;
 
     #[test]
     fn new_parser() {
@@ -90,12 +114,15 @@ mod test {
     #[test]
     fn parser_parse_empty_string() {
         let mut parser = Parser::new("");
-        assert_eq!(parser.parse(), Empty);
+        match parser.parse() {
+            Err(s) => {},
+            _ => fail!("Expected an error")
+        }
     }
 
     #[test]
     fn parse_simple_kv() {
         let mut parser = Parser::new("Version[1]");
-        assert_eq!(parser.parse(), KeyVal("Version".to_owned(), "1".to_owned()));
+        //assert_eq!(parser.parse(), KeyVal("Version".to_owned(), "1".to_owned()));
     }
 }
