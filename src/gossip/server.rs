@@ -1,10 +1,7 @@
 use std::io::net::ip::IpAddr;
 use std::io::net::ip::SocketAddr;
-use std::io::{TcpListener, TcpStream};
-use std::io::{Listener};
+use std::io::{TcpListener, TcpStream, Listener, Acceptor, IoResult};
 use std::io::net::tcp::TcpAcceptor;
-use std::io::IoResult;
-use std::io::{Listener, Acceptor};
 use std::cast;
 
 use state::State;
@@ -33,9 +30,9 @@ impl Server {
     pub fn new(ip: IpAddr, port: u16, transport: Option<~Transport>) -> Server {
 
         let addr = SocketAddr { ip: ip, port: port };
-        let mut acceptor = TcpListener::bind(addr).listen().unwrap();
+        let acceptor = TcpListener::bind(addr).listen().unwrap();
 
-        let mut server = Server {
+        let server = Server {
             // We're handling the creation of the SocketAddr to allow
             // for a more friendly API.
             addr: addr,
@@ -48,9 +45,9 @@ impl Server {
     }
 
     // Try and join a specific cluster given a peer node.
-    pub fn join(&mut self, ip: IpAddr, port: u16) -> IoResult<()> {
+    pub fn join(&self, ip: IpAddr, port: u16) -> IoResult<()> {
         // Establish a new connection with the peer node.
-        let mut stream = TcpStream::connect(SocketAddr {
+        let stream = TcpStream::connect(SocketAddr {
             ip: ip,
             port: port
         });
@@ -76,7 +73,7 @@ mod test {
 
     #[test]
     fn server_should_have_tcp() {
-        let mut server = Server::new(Ipv4Addr(127, 0, 0, 1), 5993, None);
+        let server = Server::new(Ipv4Addr(127, 0, 0, 1), 5993, None);
         let mut stream = TcpStream::connect(server.addr);
 
         match stream.write([1]) {
@@ -89,8 +86,8 @@ mod test {
 
     #[test]
     fn server_join_cluster() {
-        let mut peer = Server::new(Ipv4Addr(127, 0, 0, 1), 5994, None);
-        let mut server = Server::new(Ipv4Addr(127, 0, 0, 1), 5944, None);
+        let peer = Server::new(Ipv4Addr(127, 0, 0, 1), 5994, None);
+        let server = Server::new(Ipv4Addr(127, 0, 0, 1), 5944, None);
 
         server.join(Ipv4Addr(127, 0, 0, 1), 5944);
     }

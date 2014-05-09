@@ -1,6 +1,7 @@
 #![crate_id = "gossip"]
 #![crate_type = "lib"]
 #![feature(globs, macro_rules)]
+#![allow(unused_variable,unused_imports,unused_must_use)]
 
 /*!
 Gossip protocol engine written in Rust.
