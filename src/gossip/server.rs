@@ -8,6 +8,7 @@ use state::State;
 use message::Message;
 use message::JoiningCluster;
 use transport::Transport;
+use connection::Connection;
 
 /// A server/node within a single gossip cluster. Each server has
 /// a fast knowledge of it's cluster, which is all stored here.
@@ -19,8 +20,10 @@ pub struct Server {
     // The state will contain the spanning tree implementation and all the members
     // we'll be communicating with.
     state: State,
+
     transport: Option<~Transport>,
-    peers: Vec<Server>
+    peers: Vec<Server>,
+    connections: Vec<~Connection>
 }
 
 impl Server {
@@ -38,7 +41,8 @@ impl Server {
             addr: addr,
             state: State::new(),
             transport: transport,
-            peers: vec![]
+            peers: vec![],
+            connections: vec![]
         };
 
         server

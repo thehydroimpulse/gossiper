@@ -1,6 +1,8 @@
 use std::io::{TcpListener, TcpStream};
 use std::io::net::ip::{SocketAddr, IpAddr};
 
+use connection::Connection;
+
 pub struct TcpConnection {
     stream: TcpStream,
     addr: SocketAddr
@@ -25,6 +27,7 @@ impl TcpConnection {
     }
 }
 
+impl Connection for TcpConnection {}
 
 #[cfg(test)]
 mod test {
