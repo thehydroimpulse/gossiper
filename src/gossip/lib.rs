@@ -21,4 +21,3 @@ pub mod broadcast;
 pub mod protocol;
 pub mod transport;
 pub mod tcp;
-pub mod connection;
