@@ -1,3 +1,5 @@
+use std::str::Chars;
+
 pub enum Protocol {
     Version(uint),
     Binary(Vec<u8>),
@@ -19,10 +21,27 @@ pub enum TextProtocol {
 // ```rust
 // Parser::new()
 // ```
-pub struct Parser {
-    input: Vec<u8>,
-    // This is the current character's position
-    position: int,
-    curr_ch: char,
-    prev_ch: char
+pub struct Parser<'a> {
+    input: &'a str,
+    iter: Chars<'a>
+}
+
+impl<'a> Parser<'a> {
+    pub fn new(input: &'a str) -> Parser<'a> {
+        Parser {
+            input: input,
+            iter: input.chars()
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn new_parser() {
+        let mut parser = Parser::new("hello world");
+        assert_eq!(parser.iter.next().unwrap(), 'h');
+    }
 }
