@@ -12,6 +12,7 @@ WIP
 extern crate collections;
 extern crate uuid;
 extern crate rand;
+extern crate serialize;
 
 pub mod server;
 pub mod state;

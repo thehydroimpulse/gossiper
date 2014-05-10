@@ -5,8 +5,6 @@ use std::io::net::tcp::TcpAcceptor;
 use std::cast;
 
 use state::State;
-use message::Message;
-use message::JoiningCluster;
 use transport::Transport;
 use connection::Connection;
 
