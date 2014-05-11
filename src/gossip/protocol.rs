@@ -5,18 +5,18 @@ use util::{GossipResult, GossipError};
 pub enum Protocol {
     Version(uint),
     Binary(Vec<u8>),
-    Text(~str)
+    Text(StrBuf)
 }
 
 pub enum TextProtocol {
-    Key(~str),
+    Key(StrBuf),
     Value(Vec<u8>)
 }
 
 #[deriving(Eq,Show)]
 pub enum TextAst {
     Empty,
-    KeyVal(~str, ~str)
+    KeyVal(StrBuf, StrBuf)
 }
 
 // The TextProtocol's parser. All we need to spit out is a key->value combination.
@@ -45,8 +45,8 @@ impl<'a> Parser<'a> {
     pub fn parse_kv(&mut self, ch: char) -> TextAst {
 
         // Instantiate default strings that we can append to.
-        let mut key   = "".to_owned();
-        let mut value = "".to_owned();
+        let mut key   = "".to_strbuf();
+        let mut value = "".to_strbuf();
         let mut c     = ch;
 
         key = key.append(from_char(c));
@@ -72,18 +72,18 @@ impl<'a> Parser<'a> {
         KeyVal(key, value)
     }
 
-    pub fn parse(&mut self) -> GossipResult<HashMap<~str, ~str>> {
+    pub fn parse(&mut self) -> GossipResult<HashMap<StrBuf, StrBuf>> {
 
         if self.input.len() == 0 {
-            return Err(GossipError::new("Failed to parse an empty string".to_owned(), None));
+            return Err(GossipError::new("Failed to parse an empty string".to_strbuf(), None));
         }
 
-        let mut kv = HashMap::<~str, ~str>::new();
+        let mut kv = HashMap::<StrBuf, StrBuf>::new();
         let mut c = self.iter.next().unwrap();
 
         if c.is_alphanumeric() {
-            let mut key = "".to_owned();
-            let mut value = "".to_owned();
+            let mut key = "".to_strbuf();
+            let mut value = "".to_strbuf();
 
             match self.parse_kv(c) {
                 KeyVal(k, v) => {

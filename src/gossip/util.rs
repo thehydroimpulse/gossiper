@@ -18,12 +18,12 @@ macro_rules! unimplemented(
 /// FIXME: Instead of a useless `code` property, it might be better to have
 ///        that be an enum instead. With things like `FailedToJoin`.
 pub struct GossipError {
-    message: ~str,
+    message: StrBuf,
     error: Option<Error>
 }
 
 impl GossipError {
-    pub fn new(message: ~str, error: Option<Error>) -> GossipError {
+    pub fn new(message: StrBuf, error: Option<Error>) -> GossipError {
         GossipError {
             message: message,
             error: error

@@ -19,16 +19,16 @@ pub struct Server {
     // we'll be communicating with.
     state: State,
 
-    transport: Option<~Transport>,
+    transport: Option<Box<Transport>>,
     peers: Vec<Server>,
-    connections: Vec<~Connection>
+    connections: Vec<Box<Connection>>
 }
 
 impl Server {
     /// Create a new server given an address (ipv4 or ipv6) and a port.
     /// This function will **not** do any connection initializations. This
     /// is handled by further methods.
-    pub fn new(ip: IpAddr, port: u16, transport: Option<~Transport>) -> Server {
+    pub fn new(ip: IpAddr, port: u16, transport: Option<Box<Transport>>) -> Server {
 
         let addr = SocketAddr { ip: ip, port: port };
         let acceptor = TcpListener::bind(addr).listen().unwrap();

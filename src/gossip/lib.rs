@@ -13,6 +13,7 @@ extern crate collections;
 extern crate uuid;
 extern crate rand;
 extern crate serialize;
+extern crate core;
 
 pub mod server;
 pub mod state;
