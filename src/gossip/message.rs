@@ -10,3 +10,5 @@ use serialize::{Encodable, Decodable};
 pub enum Messages {
     Empty
 }
+
+pub trait Message {}

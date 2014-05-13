@@ -1,24 +1,32 @@
 use uuid::Uuid;
+use message::Message;
 
-// A single broadcast to other nodes within the cluster. A broadcast is a
-// fundamental primitive for communication. Each broadcast has
-// it's own unique identifier to associate it from other broadcasts.
-// Some broadcasts require a response to be received, and because we're
-// using TCP, we can't guarantee any ordering. This requires each broadcast
-// to be signed by the id.
+/// Broadcast represents a single bi-directional communication with two
+/// nodes within the cluster. The communication does **not** need to be
+/// bi-directional. Responses are completely optional.
+///
+/// Each broadcast is tagged with a unique ID so that we may track
+/// which node has received a given broadcast.
 pub struct Broadcast<'a, T> {
-    // A unique id (uuidv4) representing the broadcast. This will allow us to keep
-    // track of it when dealing with many broadcasts and we receive them in
-    // different orders.
+    /// A unique id (uuidv4) representing the broadcast. This will allow us to keep
+    /// track of it when dealing with many broadcasts and we receive them in
+    /// different orders.
     id: Uuid,
+
+    /// Request is an arbitrary type. This allows users
+    /// to specify their own custom broadcasts to be sent and received.
     request: T,
-    response: Option<|response: T|: 'a>
+
+    /// Each broadcast may have an **optional** response of a different
+    /// type than the request. The closure will be called once we receive
+    /// the full response.
+    ///
+    /// The closure is not guaranteed to be ran on a specific thread.
+    response: Option<|response: Box<Message>|: 'a>
 }
 
 impl<'a, T> Broadcast<'a, T> {
 
-    /// Create a new Broadcast with a unique uuidv4 id and an empty
-    /// response.
     pub fn new(message: T) -> Broadcast<'a, T> {
         Broadcast {
             id: Uuid::new_v4(),
@@ -35,21 +43,31 @@ impl<'a, T> Broadcast<'a, T> {
     ///     // Do something with the response
     /// });
     /// ```
-    pub fn with_response<'b>(&'b mut self, response: |response: T|: 'a) -> &'b Broadcast<'a, T> {
+    ///
+    /// To allow chaining, we'll return a reference to the broadcast
+    /// object.
+    pub fn with_response(&mut self, response: |response: Box<Message>|: 'a) {
         self.response = Some(response);
-        &*self
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use message::Empty;
 
     #[test]
     fn have_no_response() {
-        let broadcast = Broadcast::new(Empty);
-
+        let broadcast = Broadcast::new(123);
         assert!(broadcast.response.is_none());
+    }
+
+    #[test]
+    fn add_response() {
+        let mut broadcast = Broadcast::new(123);
+        broadcast.with_response(|response| {
+
+        });
+
+        assert!(broadcast.response.is_some());
     }
 }
