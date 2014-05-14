@@ -1,5 +1,7 @@
 use uuid::Uuid;
-use message::Message;
+use message::Response;
+use util::{GossipResult, as_byte_slice};
+use connection::Connection;
 
 /// Broadcast represents a single bi-directional communication with two
 /// nodes within the cluster. The communication does **not** need to be
@@ -22,7 +24,7 @@ pub struct Broadcast<'a, T> {
     /// the full response.
     ///
     /// The closure is not guaranteed to be ran on a specific thread.
-    response: Option<|response: Box<Message>|: 'a>
+    response: Option<|response: Box<Response>|: 'a>
 }
 
 impl<'a, T> Broadcast<'a, T> {
@@ -43,16 +45,57 @@ impl<'a, T> Broadcast<'a, T> {
     ///     // Do something with the response
     /// });
     /// ```
-    ///
-    /// To allow chaining, we'll return a reference to the broadcast
-    /// object.
-    pub fn with_response(message: T,
-                         response: |response: Box<Message>|: 'a) -> Broadcast<'a, T> {
+    pub fn with_response(message: T, response: |response: Box<Response>|: 'a) -> Broadcast<'a, T> {
         Broadcast {
             id: Uuid::new_v4(),
             request: message,
             response: Some(response)
         }
+    }
+
+    /// Send the broadcast to a given server.
+    ///
+    /// `send` only works with a single server. It requires a
+    /// connection (tcp or otherwise) to be established between the two clients.
+    ///
+    /// ```rust
+    /// let broadcast = Broadcast::new(123);
+    /// let connection = TcpConnection::new(Ipv4Addr(127, 0, 0, 1), 5499);
+    ///
+    /// // Send the broadcast.
+    /// match broadcast.send(connection) {
+    ///     Ok(msg) => {},
+    ///     Err(err) => {}
+    /// }
+    /// ```
+    pub fn send(&self, connection: Box<Connection>) -> GossipResult<()> {
+
+        // We need a raw byte slice to send over the network.
+        let bytes = as_byte_slice(&self.request);
+
+        // Capture the length of the content of the message which
+        // we'll prepend to the request.
+        let len = bytes.len() as u8;
+
+        // The final contents of the request.
+        let mut req: Vec<u8> = vec![len];
+
+        // Not sure if this is the best way. We have to copy the
+        // data over to the new vector.
+        for i in range(0, len as uint) {
+            req.push(bytes[i]);
+        }
+
+        // Make sure the first index is the length of the
+        // request.
+        assert_eq!(req.get(0), &len);
+
+        // Finally, we have our slice to send.
+        let bytes = req.as_slice();
+
+        connection.send(bytes);
+
+        Ok(())
     }
 }
 
@@ -61,17 +104,35 @@ mod test {
     use super::*;
 
     #[test]
-    fn have_no_response() {
+    fn has_no_response() {
         let broadcast = Broadcast::new(123);
         assert!(broadcast.response.is_none());
     }
 
     #[test]
     fn add_response() {
-        let mut broadcast = Broadcast::with_response(123, |response| {
-
-        });
-
+        let mut broadcast = Broadcast::with_response(123, |response| {});
         assert!(broadcast.response.is_some());
+    }
+
+    #[test]
+    fn send_broadcast() {
+        use tcp::transport::TcpTransport;
+        use tcp::connection::TcpConnection;
+        use std::io::net::ip::Ipv4Addr;
+
+        let addr       = "127.0.0.1";
+        let port       = 5988;
+
+        // Create a new transport:
+        let transport  = TcpTransport::new(addr, port);
+
+        // Connection to the transport:
+        let connection = box TcpConnection::new(addr, port);
+
+        let broadcast  = Broadcast::new(123);
+
+        // Send it:
+        broadcast.send(connection);
     }
 }

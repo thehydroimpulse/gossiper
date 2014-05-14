@@ -2,32 +2,31 @@ use std::io::{TcpListener, TcpStream};
 use std::io::net::ip::{SocketAddr, IpAddr};
 
 use connection::Connection;
+use util::GossipResult;
 
 pub struct TcpConnection {
-    stream: TcpStream,
-    addr: SocketAddr
+    stream: TcpStream
 }
 
 impl TcpConnection {
-    pub fn new(ip: IpAddr, port: u16) -> TcpConnection {
-        let addr = SocketAddr {
-            ip: ip,
-            port: port
-        };
+    pub fn new(ip: &str, port: u16) -> TcpConnection {
 
-        let stream = match TcpStream::connect(addr) {
+        let stream = match TcpStream::connect(ip, port) {
             Ok(stream) => stream,
             Err(err) => fail!("Tcp stream failed to connect: {}", err)
         };
 
         TcpConnection {
-            stream: stream,
-            addr: addr
+            stream: stream
         }
     }
 }
 
-impl Connection for TcpConnection {}
+impl Connection for TcpConnection {
+    fn send(&self, bytes: &[u8]) -> GossipResult<()> {
+        Ok(())
+    }
+}
 
 #[cfg(test)]
 mod test {
@@ -38,11 +37,10 @@ mod test {
 
     #[test]
     fn open_stream() {
-        let ip = Ipv4Addr(127, 0, 0, 1);
+        let ip = "127.0.0.1";
         let port = 5689;
 
-        let addr = SocketAddr { ip: ip, port: port };
-        let acceptor = TcpListener::bind(addr).listen().unwrap();
+        let acceptor = TcpListener::bind(ip, port).listen().unwrap();
 
         TcpConnection::new(ip, port);
     }

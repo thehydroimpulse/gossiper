@@ -11,4 +11,6 @@ pub enum Messages {
     Empty
 }
 
-pub trait Message {}
+/// Generic trait for the responses that users will need to
+/// implement.
+pub trait Response {}

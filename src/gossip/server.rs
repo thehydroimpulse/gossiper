@@ -2,7 +2,6 @@ use std::io::net::ip::IpAddr;
 use std::io::net::ip::SocketAddr;
 use std::io::{TcpListener, TcpStream, Listener, Acceptor, IoResult};
 use std::io::net::tcp::TcpAcceptor;
-use std::cast;
 
 use state::State;
 use transport::Transport;
@@ -31,7 +30,6 @@ impl Server {
     pub fn new(ip: IpAddr, port: u16, transport: Option<Box<Transport>>) -> Server {
 
         let addr = SocketAddr { ip: ip, port: port };
-        let acceptor = TcpListener::bind(addr).listen().unwrap();
 
         let server = Server {
             // We're handling the creation of the SocketAddr to allow
@@ -47,12 +45,9 @@ impl Server {
     }
 
     // Try and join a specific cluster given a peer node.
-    pub fn join(&self, ip: IpAddr, port: u16) -> IoResult<()> {
+    pub fn join(&self, ip: &str, port: u16) -> IoResult<()> {
         // Establish a new connection with the peer node.
-        let stream = TcpStream::connect(SocketAddr {
-            ip: ip,
-            port: port
-        });
+        let stream = TcpStream::connect(ip, port);
 
         Ok(())
     }
@@ -91,6 +86,6 @@ mod test {
         let peer = Server::new(Ipv4Addr(127, 0, 0, 1), 5994, None);
         let server = Server::new(Ipv4Addr(127, 0, 0, 1), 5944, None);
 
-        server.join(Ipv4Addr(127, 0, 0, 1), 5944);
+        server.join("127.0.0.1", 5944);
     }
 }

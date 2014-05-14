@@ -10,20 +10,15 @@ pub struct TcpTransport {
 }
 
 impl TcpTransport {
-    pub fn new(ip: IpAddr, port: u16) -> TcpTransport {
-        let addr = SocketAddr {
-            ip: ip,
-            port: port
-        };
-
+    pub fn new(ip: &str, port: u16) -> TcpTransport {
         TcpTransport {
-            acceptor: TcpListener::bind(addr).listen().unwrap()
+            acceptor: TcpListener::bind(ip, port).listen().unwrap()
         }
     }
 }
 
 impl Transport for TcpTransport {
-    fn join<T>(&self, ip: IpAddr, port: u16) -> GossipResult<T> {
+    fn join<T>(&self, ip: &str, port: u16) -> GossipResult<T> {
         unimplemented!()
     }
 }
@@ -43,7 +38,7 @@ mod test {
 
     #[test]
     fn new_transport() {
-        let addr = Ipv4Addr(127, 0, 0, 1);
+        let addr = "127.0.0.1";
         let port = 5499;
 
         let transport = TcpTransport::new(addr, port);
