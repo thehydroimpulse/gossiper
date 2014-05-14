@@ -68,6 +68,10 @@ impl<'a, T> Broadcast<'a, T> {
     ///     Err(err) => {}
     /// }
     /// ```
+    ///
+    /// Encoding Format:
+    ///
+    /// Size (RequestMessage | ResponseMessage)
     pub fn send(&self, connection: Box<Connection>) -> GossipResult<()> {
 
         // We need a raw byte slice to send over the network.
