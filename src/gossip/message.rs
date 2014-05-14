@@ -1,6 +1,7 @@
 use std::io::net::ip::SocketAddr;
 use uuid::Uuid;
 use serialize::{Encodable, Decodable};
+use util::as_byte_slice;
 
 /// Generic trait for the responses that users will need to
 /// implement.
@@ -37,5 +38,9 @@ impl<'a> Message<'a> {
             id: id,
             bytes: bytes
         }
+    }
+
+    pub fn encode(&'a self) -> &'a [u8] {
+        as_byte_slice(self)
     }
 }

@@ -83,7 +83,7 @@ impl<'a, T> Broadcast<'a, T> {
             bytes
         );
 
-        Ok(())
+        connection.send(message.encode())
     }
 }
 
