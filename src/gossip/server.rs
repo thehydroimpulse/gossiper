@@ -7,8 +7,24 @@ use state::State;
 use transport::Transport;
 use connection::Connection;
 
-/// A server/node within a single gossip cluster. Each server has
-/// a fast knowledge of it's cluster, which is all stored here.
+/// A server/node within a single gossip cluster.
+///
+/// Each server will have it's own transport service (Tcp server, for
+/// example) and each server will have a connection (TcpStream) to
+/// each other node within the cluster. Thus, each has a way for
+/// servers to communicate with them
+///
+/// A (Server, Connection:[B, C]) ----> B (Server, Connection:[A, C])
+/// ---- C (Server, Connection:[A, B])
+///
+/// If A sends a message to C, it uses it's connection to C. If C
+/// wants to send a message to B, it uses it's connection to B.
+///
+/// Each server has a list of Connections, and it has a transport to
+/// accept new connections.
+///
+/// Thus, the transport is used for accepting new connections.
+///
 pub struct Server<'a> {
 
     // Local address of the server. (Tcp)
@@ -20,8 +36,7 @@ pub struct Server<'a> {
     state: State,
 
     transport: Option<Box<Transport>>,
-    peers: Vec<Server<'a>>,
-    connections: Vec<Box<Connection>>
+    peers: Vec<Server<'a>>
 }
 
 impl<'a> Server<'a> {
@@ -36,8 +51,7 @@ impl<'a> Server<'a> {
             port: port,
             state: State::new(),
             transport: transport,
-            peers: vec![],
-            connections: vec![]
+            peers: Vec::new()
         }
     }
 

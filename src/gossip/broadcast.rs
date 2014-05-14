@@ -108,19 +108,25 @@ mod test {
         use tcp::transport::TcpTransport;
         use tcp::connection::TcpConnection;
         use std::io::net::ip::Ipv4Addr;
+        use transport::Transport;
+        use message::Message;
+        use util::GossipResult;
 
         let addr       = "127.0.0.1";
         let port       = 5988;
 
-        // Create a new transport:
+        // Create a new transport to start accepting new
+        // connections.
         let transport  = TcpTransport::new(addr, port);
 
-        // Connection to the transport:
+        // Establish a new connection to the transport. This will
+        // add a connection.
         let connection = box TcpConnection::new(addr, port);
 
         let broadcast  = Broadcast::new(123);
 
-        // Send it:
         broadcast.send(connection);
+
+        let msg: GossipResult<Message> = transport.receive();
     }
 }
