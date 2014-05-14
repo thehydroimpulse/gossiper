@@ -46,8 +46,13 @@ impl<'a, T> Broadcast<'a, T> {
     ///
     /// To allow chaining, we'll return a reference to the broadcast
     /// object.
-    pub fn with_response(&mut self, response: |response: Box<Message>|: 'a) {
-        self.response = Some(response);
+    pub fn with_response(message: T,
+                         response: |response: Box<Message>|: 'a) -> Broadcast<'a, T> {
+        Broadcast {
+            id: Uuid::new_v4(),
+            request: message,
+            response: Some(response)
+        }
     }
 }
 
@@ -63,8 +68,7 @@ mod test {
 
     #[test]
     fn add_response() {
-        let mut broadcast = Broadcast::new(123);
-        broadcast.with_response(|response| {
+        let mut broadcast = Broadcast::with_response(123, |response| {
 
         });
 
