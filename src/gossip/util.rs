@@ -23,7 +23,7 @@ macro_rules! unimplemented(
     )
 )
 
-/// A gossip error represents **any** errors that happen within this system.
+/// A gossip error represents an error that happens typically during any I/O.
 ///
 /// FIXME: Instead of a useless `code` property, it might be better to have
 ///        that be an enum instead. With things like `FailedToJoin`.

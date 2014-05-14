@@ -97,9 +97,7 @@ impl<'a, T> Broadcast<'a, T> {
         // Finally, we have our slice to send.
         let bytes = req.as_slice();
 
-        connection.send(bytes);
-
-        Ok(())
+        connection.send(bytes)
     }
 }
 
@@ -115,7 +113,7 @@ mod test {
 
     #[test]
     fn add_response() {
-        let mut broadcast = Broadcast::with_response(123, |response| {});
+        let broadcast = Broadcast::with_response(123, |response| {});
         assert!(broadcast.response.is_some());
     }
 

@@ -1,7 +1,7 @@
 #![crate_id = "gossip"]
 #![crate_type = "lib"]
 #![feature(globs, macro_rules)]
-#![allow(unused_variable,unused_imports,unused_must_use)]
+#![allow(unused_variable,unused_imports,unused_must_use,dead_code)]
 
 /*!
 Gossip protocol engine written in Rust.
@@ -17,7 +17,7 @@ extern crate core;
 
 pub mod server;
 pub mod state;
-mod util;
+pub mod util;
 pub mod message;
 pub mod broadcast;
 pub mod protocol;
