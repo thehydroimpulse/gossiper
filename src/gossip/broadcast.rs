@@ -1,5 +1,5 @@
 use uuid::Uuid;
-use message::Response;
+use message::{Message, Response, Version, RequestKind};
 use util::{GossipResult, as_byte_slice};
 use connection::Connection;
 
@@ -73,31 +73,17 @@ impl<'a, T> Broadcast<'a, T> {
     ///
     /// Size (RequestMessage | ResponseMessage)
     pub fn send(&self, connection: Box<Connection>) -> GossipResult<()> {
-
         // We need a raw byte slice to send over the network.
         let bytes = as_byte_slice(&self.request);
 
-        // Capture the length of the content of the message which
-        // we'll prepend to the request.
-        let len = bytes.len() as u8;
+        let message = Message::new(
+            Version(0u8),
+            RequestKind,
+            self.id.as_bytes(),
+            bytes
+        );
 
-        // The final contents of the request.
-        let mut req: Vec<u8> = vec![len];
-
-        // Not sure if this is the best way. We have to copy the
-        // data over to the new vector.
-        for i in range(0, len as uint) {
-            req.push(bytes[i]);
-        }
-
-        // Make sure the first index is the length of the
-        // request.
-        assert_eq!(req.get(0), &len);
-
-        // Finally, we have our slice to send.
-        let bytes = req.as_slice();
-
-        connection.send(bytes)
+        Ok(())
     }
 }
 
