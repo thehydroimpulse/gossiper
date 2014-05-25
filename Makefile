@@ -18,4 +18,4 @@ clean:
 	@rm -rf target
 
 
-.PHONY: clean all
+.PHONY: clean
