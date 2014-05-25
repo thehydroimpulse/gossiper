@@ -125,8 +125,8 @@ mod test {
 
         let broadcast  = Broadcast::new(123);
 
-        broadcast.send(connection);
+        //broadcast.send(connection);
 
-        let msg: GossipResult<Message> = transport.receive();
+        //let msg: GossipResult<Message> = transport.receive();
     }
 }

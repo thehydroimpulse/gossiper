@@ -43,6 +43,6 @@ impl GossipError {
 
 impl Show for GossipError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f.buf, "{}", self.message)
+        write!(f, "{}", self.message)
     }
 }
