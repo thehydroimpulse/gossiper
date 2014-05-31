@@ -5,7 +5,7 @@ pub struct State {
     // An eager set contains the peers that the current node will
     // communicate with when a new message comes in. The goal is to form
     // a [Spanning Tree](https://en.wikipedia.org/wiki/Spanning_tree)
-    eager_set: HashSet<StrBuf>,
+    eager_set: HashSet<String>,
 
     // The lazy set contains the nodes where if they were within the eager set,
     // would add additional, duplicate edges to the cluster graph. This means that
@@ -33,9 +33,9 @@ pub struct State {
     // We still need to keep the cut edges, which we'll put inside the lazy set.
     // This is used for healing the tree (when a node goes down or we have a network
     // partition somewhere resulting in some nodes missing broadcasts.)
-    lazy_set: HashSet<StrBuf>,
-    exchanges: Vec<StrBuf>,
-    outstanding: Vec<StrBuf>
+    lazy_set: HashSet<String>,
+    exchanges: Vec<String>,
+    outstanding: Vec<String>
 }
 
 impl State {
