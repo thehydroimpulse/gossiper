@@ -4,7 +4,7 @@ use util::as_byte_slice;
 use connection::Connection;
 use response::Response;
 use encode::encode;
-use message::Version;
+use protocol::Version;
 
 /// Broadcast represents a single bi-directional communication with two
 /// nodes within the cluster. The communication does **not** need to be
