@@ -1,6 +1,7 @@
 use uuid::Uuid;
 use message::{Message, Response, Version, RequestKind};
-use util::{GossipResult, as_byte_slice};
+use result::GossipResult;
+use util::as_byte_slice;
 use connection::Connection;
 
 /// Broadcast represents a single bi-directional communication with two
@@ -110,7 +111,7 @@ mod test {
         use std::io::net::ip::Ipv4Addr;
         use transport::Transport;
         use message::Message;
-        use util::GossipResult;
+        use result::GossipResult;
 
         let addr       = "127.0.0.1";
         let port       = 5988;

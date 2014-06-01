@@ -24,3 +24,4 @@ pub mod protocol;
 pub mod transport;
 pub mod tcp;
 pub mod connection;
+pub mod result;

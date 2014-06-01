@@ -1,6 +1,6 @@
 use std::str::{Chars, from_char};
 use collections::hashmap::HashMap;
-use util::{GossipResult, GossipError};
+use result::{GossipResult, GossipError};
 
 pub enum Protocol {
     Version(uint),
@@ -10,5 +10,5 @@ pub enum Protocol {
 #[cfg(test)]
 mod test {
     use super::*;
-    use util::GossipError;
+    use result::GossipError;
 }

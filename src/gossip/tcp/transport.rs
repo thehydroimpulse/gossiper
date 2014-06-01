@@ -6,7 +6,7 @@ use collections::hashmap::HashMap;
 use uuid::Uuid;
 
 use transport::Transport;
-use util::GossipResult;
+use result::GossipResult;
 use connection::Connection;
 use message::Message;
 

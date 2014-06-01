@@ -1,4 +1,4 @@
-use util::GossipResult;
+use result::GossipResult;
 use message::Message;
 
 pub trait Connection {

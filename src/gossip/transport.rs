@@ -1,5 +1,5 @@
 use std::io::net::ip::IpAddr;
-use util::GossipResult;
+use result::GossipResult;
 use message::Message;
 
 pub trait Transport {

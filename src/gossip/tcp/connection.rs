@@ -2,7 +2,7 @@ use std::io::{TcpListener, TcpStream};
 use std::io::net::ip::{SocketAddr, IpAddr};
 
 use connection::Connection;
-use util::GossipResult;
+use result::GossipResult;
 use message::Message;
 
 pub struct TcpConnection {
