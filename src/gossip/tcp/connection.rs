@@ -3,7 +3,6 @@ use std::io::net::ip::{SocketAddr, IpAddr};
 
 use connection::Connection;
 use result::GossipResult;
-use message::Message;
 
 pub struct TcpConnection {
     stream: TcpStream
@@ -28,7 +27,7 @@ impl Connection for TcpConnection {
         Ok(())
     }
 
-    fn receive(&self) -> GossipResult<Message> {
+    fn receive(&self) -> GossipResult<&[u8]> {
         unimplemented!()
     }
 }

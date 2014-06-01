@@ -1,8 +1,10 @@
 use uuid::Uuid;
-use message::{Message, Response, Version, RequestKind};
 use result::GossipResult;
 use util::as_byte_slice;
 use connection::Connection;
+use response::Response;
+use encode::encode;
+use message::Version;
 
 /// Broadcast represents a single bi-directional communication with two
 /// nodes within the cluster. The communication does **not** need to be
@@ -77,14 +79,7 @@ impl<'a, T> Broadcast<'a, T> {
         // We need a raw byte slice to send over the network.
         let bytes = as_byte_slice(&self.request);
 
-        let message = Message::new(
-            Version(0u8),
-            RequestKind,
-            self.id.as_bytes(),
-            bytes
-        );
-
-        connection.send(message.encode())
+        connection.send(encode(Version(1), &self.request))
     }
 }
 
@@ -110,7 +105,6 @@ mod test {
         use tcp::connection::TcpConnection;
         use std::io::net::ip::Ipv4Addr;
         use transport::Transport;
-        use message::Message;
         use result::GossipResult;
 
         let addr       = "127.0.0.1";

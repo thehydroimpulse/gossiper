@@ -8,7 +8,6 @@ use uuid::Uuid;
 use transport::Transport;
 use result::GossipResult;
 use connection::Connection;
-use message::Message;
 
 /// An abstraction on top of a standard Tcp acceptor. Instead of
 /// working with a low-level interface, with bytes, the TcpTransport
@@ -39,7 +38,7 @@ impl Transport for TcpTransport {
         unimplemented!()
     }
 
-    fn receive(&self) -> GossipResult<Message> {
+    fn receive(&self) -> GossipResult<&[u8]> {
         unimplemented!()
     }
 

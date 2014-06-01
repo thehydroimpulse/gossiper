@@ -1,6 +1,6 @@
 use collections::HashSet;
 
-#[deriving(Show,Eq)]
+#[deriving(Show)]
 pub struct State {
     // An eager set contains the peers that the current node will
     // communicate with when a new message comes in. The goal is to form
