@@ -23,7 +23,7 @@ impl TcpConnection {
 }
 
 impl Connection for TcpConnection {
-    fn send(&self, bytes: &[u8]) -> GossipResult<()> {
+    fn send(&self, bytes: Vec<u8>) -> GossipResult<()> {
         Ok(())
     }
 
