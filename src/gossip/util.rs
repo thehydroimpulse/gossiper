@@ -45,4 +45,19 @@ mod test {
         let dec = from_byte_slice(bytes);
         assert_eq!(i, *dec);
     }
+
+    #[test]
+    fn decode_struct() {
+        #[deriving(PartialEq, Show)]
+        struct Foo {
+            i: int
+        }
+
+        let foo = Foo { i : 5 };
+
+        let bytes = as_byte_slice(&foo);
+        let dec   = from_byte_slice(bytes);
+        assert_eq!(foo, *dec);
+        assert_eq!(dec.i, 5);
+    }
 }
