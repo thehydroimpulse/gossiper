@@ -17,3 +17,31 @@ pub fn encode<'a, T>(version: ProtocolVersion, val: &'a T) -> Vec<u8> {
 
     stream
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use version::Version;
+    use util::as_byte_slice;
+
+    #[test]
+    fn should_encode_int() {
+        let i = 5;
+        let arr = encode(Version(1), &i);
+
+        let mut should = Vec::new();
+
+        should.push(1u8);
+        should.push_all(as_byte_slice(&i));
+
+        assert_eq!(arr, should);
+    }
+
+    #[test]
+    fn should_decode_int() {
+        let i = 5;
+        let encoded = encode(Version(1), &i);
+
+
+    }
+}
