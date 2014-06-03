@@ -25,6 +25,8 @@ pub fn as_byte_slice<'a, T>(x: &'a T) -> &'a [u8] {
 /// * We need: T
 ///
 /// 1) Convert x to &[T]
+/// 2) Get the raw pointer from the slice.
+/// 3) Dereference the pointer and return a reference.
 pub fn from_byte_slice<'a, T>(x: &'a [u8]) -> &'a T {
     unsafe {
         let slice: &[T] = mem::transmute(x);
@@ -59,5 +61,34 @@ mod test {
         let dec   = from_byte_slice(bytes);
         assert_eq!(foo, *dec);
         assert_eq!(dec.i, 5);
+    }
+
+
+    #[test]
+    fn decode_boxed_struct() {
+        #[deriving(PartialEq, Show)]
+        struct Foo {
+            i: int
+        }
+
+        let foo = box Foo { i : 5 };
+        let bytes = as_byte_slice(&foo);
+        let decoded = from_byte_slice(bytes);
+        assert_eq!(foo, *decoded);
+    }
+
+    #[test]
+    fn decode_recursive_struct() {
+        #[deriving(PartialEq, Show)]
+        struct Foo {
+            rec: Option<Box<Foo>>
+        }
+
+        let foo = Foo { rec: Some(box Foo { rec: None }) };
+        let bytes = as_byte_slice(&foo);
+        let dec = from_byte_slice(bytes);
+        assert_eq!(foo, *dec);
+        assert!(dec.rec.is_some());
+        assert!(dec.rec.get_ref().rec.is_none());
     }
 }
