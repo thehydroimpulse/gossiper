@@ -3,7 +3,6 @@ use collections::hashmap::HashMap;
 use result::{GossipResult, GossipError};
 
 pub enum Protocol {
-    Version(uint),
     Binary(Vec<u8>)
 }
 

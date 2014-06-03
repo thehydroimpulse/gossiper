@@ -4,7 +4,7 @@ use util::as_byte_slice;
 use connection::Connection;
 use response::Response;
 use encode::encode;
-use protocol::Version;
+use version::Version;
 
 /// Broadcast represents a single bi-directional communication with two
 /// nodes within the cluster. The communication does **not** need to be
@@ -76,9 +76,6 @@ impl<'a, T> Broadcast<'a, T> {
     ///
     /// Size (RequestMessage | ResponseMessage)
     pub fn send(&self, connection: Box<Connection>) -> GossipResult<()> {
-        // We need a raw byte slice to send over the network.
-        let bytes = as_byte_slice(&self.request);
-
         connection.send(encode(Version(1), &self.request))
     }
 }

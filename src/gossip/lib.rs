@@ -27,3 +27,4 @@ pub mod connection;
 pub mod result;
 pub mod response;
 pub mod encode;
+pub mod version;
