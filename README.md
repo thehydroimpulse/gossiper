@@ -1,5 +1,4 @@
-[![Stories in Ready](https://badge.waffle.io/thehydroimpulse/gossip.rs.png?label=ready&title=Ready)](https://waffle.io/thehydroimpulse/gossip.rs)
-# Gossip.rs [![Build Status](https://travis-ci.org/TheHydroImpulse/gossip.rs.svg)](https://travis-ci.org/TheHydroImpulse/gossip.rs)
+# Gossip.rs [![Build Status](https://travis-ci.org/TheHydroImpulse/gossip.rs.svg)](https://travis-ci.org/TheHydroImpulse/gossip.rs) [![Stories in Ready](https://badge.waffle.io/thehydroimpulse/gossip.rs.png?label=ready&title=Ready)](https://waffle.io/thehydroimpulse/gossip.rs)
 
 **Note**: This is a work-in-progress. It's not yet useable.
 
@@ -57,15 +56,6 @@ rustc -Ltarget foo/lib.rs
 ```
 
 Replacing `target` with the previous target folder that holds the gossip `.rlib` library.
-
-
-## Documentation
-
-* [Introduction](docs/introduction.md)
-* [Peers](docs/peers.md)
-* [Cluster](docs/cluster.md)
-* [Graph](docs/graph.md)
-* [Transport](docs/transports.md)
 
 ## Use Cases
 
