@@ -88,6 +88,18 @@ Notable/Inspired implementations:
 * [Controlled Epidemics: Riak's New Gossip Protocol and Metadata Store (Jordan West)](https://www.youtube.com/watch?v=s4cCUTPU8GI)
 * [Spanning Tree](https://en.wikipedia.org/wiki/Spanning_tree)
 
+## Testing
+
+Testing is extremely important for a distributed systems. We need to ensure that the applied trade-offs are appropriate and accurate as well as the overall design is *correct*.
+
+There are numerous different testing methods used(/going to be used):
+
+* Unit tests: Ensures correctness at the API/atomic level. These are fully isolated tests to ensure
+              that they work as intended.
+* Simulation tests (acceptance tests): These test the system as a whole.
+* [Jepsen](https://github.com/aphyr/jepsen): These might replace the current simulation tests.
+
+
 ## License
 
 The MIT License (MIT)
