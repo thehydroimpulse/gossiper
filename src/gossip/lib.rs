@@ -35,3 +35,4 @@ pub mod connection;
 pub mod result;
 pub mod response;
 pub mod version;
+pub mod health;
