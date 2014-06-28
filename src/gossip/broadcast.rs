@@ -47,12 +47,9 @@ impl<'a, T> Broadcast<'a, T> {
     ///     // Do something with the response
     /// });
     /// ```
-    pub fn with_response(message: T, response: |response: Box<Response>|: 'a) -> Broadcast<'a, T> {
-        Broadcast {
-            id: Uuid::new_v4(),
-            request: message,
-            response: Some(response)
-        }
+    pub fn with_response(mut self, response: |response: Box<Response>|: 'a) -> Broadcast<'a, T> {
+        self.response = Some(response);
+        self
     }
 
     /// Send the broadcast to a given server.
@@ -92,7 +89,7 @@ mod test {
 
     #[test]
     fn add_response() {
-        let broadcast = Broadcast::with_response(123, |response| {});
+        let broadcast = Broadcast::new(123).with_response(|response| {});
         assert!(broadcast.response.is_some());
     }
 
