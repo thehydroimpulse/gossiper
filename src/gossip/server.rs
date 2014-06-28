@@ -52,10 +52,8 @@ impl<'a, T: Transport> Server<'a, T> {
     }
 
     // Try and join a specific cluster given a peer node.
-    pub fn join(&mut self, ip: &str, port: u16) -> IoResult<()> {
-        // Establish a new connection with the peer node.
-        let mut connection: GossipResult<Box<Connection>> = self.transport.new_connection(ip, port);
-
+    pub fn join(&mut self, ip: &str, port: u16) -> GossipResult<()> {
+        try!(self.transport.join(ip, port))
         Ok(())
     }
 }

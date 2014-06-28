@@ -35,3 +35,21 @@ impl<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>> 
         }
     }
 }
+
+
+#[deriving(Encodable, Decodable, PartialEq, Show)]
+pub struct Join {
+    id: Uuid,
+    ip: String,
+    port: u16
+}
+
+impl Join {
+    pub fn new(id: Uuid, ip: String, port: u16) -> Join {
+        Join {
+            id: id,
+            ip: ip,
+            port: port
+        }
+    }
+}

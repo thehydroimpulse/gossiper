@@ -9,9 +9,10 @@ use uuid::Uuid;
 use std::io::IoError;
 
 use transport::Transport;
-use result::{GossipResult, from_io};
+use result::{GossipResult, io_err};
 use connection::Connection;
 use message::Message;
+use tcp::connection::TcpConnection;
 
 /// A tcp transport has two fundamental elements within: An acceptor (server)
 /// and a set of connections. The only job of the acceptor is to, well,
@@ -48,8 +49,8 @@ impl TcpTransport {
     ///
     /// FIXME: Perhaps we should handle the errors a little nicer?
     pub fn new(ip: &str, port: u16) -> GossipResult<TcpTransport> {
-        let listener = try!(TcpListener::bind(ip, port).map_err(from_io));
-        let acceptor = try!(listener.listen().map_err(from_io));
+        let listener = try!(TcpListener::bind(ip, port).map_err(io_err));
+        let acceptor = try!(listener.listen().map_err(io_err));
 
         Ok(TcpTransport {
             acceptor: acceptor,
@@ -60,11 +61,6 @@ impl TcpTransport {
 
 impl Transport for TcpTransport {
 
-    fn new_connection(&mut self, ip: &str, port: u16)
-        -> GossipResult<Box<Connection>> {
-        unimplemented!()
-    }
-
     /// By default, a node does **not** join a cluster automatically. Thus,
     /// one has to manually initiate the join operation.
     ///
@@ -74,8 +70,12 @@ impl Transport for TcpTransport {
     ///
     /// The peer node is responsible for propagating the new membership details
     /// through a new broadcast.
-    fn join<T>(&self, ip: &str, port: u16) -> GossipResult<T> {
-        unimplemented!()
+    fn join(&self, ip: &str, port: u16) -> GossipResult<()> {
+
+        // Establish a new connection with the peer node.
+        let mut conn = try!(TcpConnection::connect(ip, port));
+
+        Ok(())
     }
 
     /// Receive a message from any of the connections.
@@ -106,6 +106,6 @@ mod test {
         let port = 5499;
 
         let transport = TcpTransport::new(addr, port);
-        let connection = TcpConnection::new(addr, port);
+        let connection = TcpConnection::connect(addr, port);
     }
 }

@@ -9,15 +9,12 @@ use connection::Connection;
 /// enough to support many different implementations, such as Tcp, HTTP,
 /// etc...
 pub trait Transport {
-    /// Establish a new connection.
-    fn new_connection(&mut self, ip: &str, port: u16) -> GossipResult<Box<Connection>>;
-
     /// A new node wants to join the existing cluster. Joining an existing
     /// cluster is as easy as establishing a connection to one
     /// of the nodes in the cluster. The node that already has
     /// a membership in the cluster will be responsible for establishing
     /// a new gossip message to the rest of the nodes.
-    fn join<T>(&self, ip: &str, port: u16) -> GossipResult<T>;
+    fn join(&self, ip: &str, port: u16) -> GossipResult<()>;
 
     /// Try and receive a message that has been sent to this node.
     fn receive<T: Decodable<Decoder, DecoderError>>(&self) -> GossipResult<T>;

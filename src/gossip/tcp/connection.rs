@@ -2,23 +2,20 @@ use std::io::{TcpListener, TcpStream};
 use std::io::net::ip::{SocketAddr, IpAddr};
 
 use connection::Connection;
-use result::GossipResult;
+use result::{GossipResult, io_err};
 
 pub struct TcpConnection {
     stream: TcpStream
 }
 
 impl TcpConnection {
-    pub fn new(ip: &str, port: u16) -> TcpConnection {
+    pub fn connect(ip: &str, port: u16) -> GossipResult<TcpConnection> {
 
-        let stream = match TcpStream::connect(ip, port) {
-            Ok(stream) => stream,
-            Err(err) => fail!("Tcp stream failed to connect: {}", err)
-        };
+        let stream = try!(TcpStream::connect(ip, port).map_err(io_err));
 
-        TcpConnection {
+        Ok(TcpConnection {
             stream: stream
-        }
+        })
     }
 }
 
@@ -47,6 +44,6 @@ mod test {
 
         let acceptor = TcpListener::bind(ip, port).listen().unwrap();
 
-        TcpConnection::new(ip, port);
+        TcpConnection::connect(ip, port);
     }
 }
