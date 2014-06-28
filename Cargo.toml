@@ -8,3 +8,7 @@ authors = [ "Daniel Fagnan <dnfagnan@gmail.com>" ]
 
 name = "gossip"
 path = "src/gossip/lib.rs"
+
+[dependencies.data]
+
+git = "https://github.com/TheHydroImpulse/data.rs"
