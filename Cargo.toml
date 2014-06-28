@@ -8,4 +8,3 @@ authors = [ "Daniel Fagnan <dnfagnan@gmail.com>" ]
 
 name = "gossip"
 path = "src/gossip/lib.rs"
-
