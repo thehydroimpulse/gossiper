@@ -2,7 +2,7 @@ use std::io::net::ip::{SocketAddr, IpAddr};
 use std::io::{TcpListener, TcpStream, Listener, Acceptor};
 use std::io::net::tcp::{TcpAcceptor, TcpStream};
 
-use collections::hashmap::HashMap;
+use std::collections::hashmap::HashMap;
 use uuid::Uuid;
 
 use transport::Transport;

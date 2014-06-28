@@ -30,32 +30,26 @@ Rust, on the other hand, doesn't have this limitation. It ships with a single AP
 
 ## Building Gossip.rs
 
-Currently, Rust doesn't have a useable package manager *yet* (one is in the works). That means Makefiles are the current solution :(.
-
-```rust
-make
+```
+cargo build
 ```
 
-This will produce an `x.rlib` file under the `target` folder. You can then add this path/file to another Rust project.
+## Installing Gossip
 
-## Importing Gossip.rs
+Gossip is now a Cargo package. You can simply include Gossip as a dependency.
 
-From another Rust crate, you'll need to let Rust know about the gossip crate.
+```toml
+# Cargo.toml
 
-```rust
-// foo/lib.rs
-#![crate_id = "foo"]
-
-extern crate gossip;
+[dependencies.gossip]
+git = "https://github.com/TheHydroImpulse/gossip.rs"
 ```
 
-Building `foo` is pretty simple:
+Now run:
 
 ```
-rustc -Ltarget foo/lib.rs
+cargo build
 ```
-
-Replacing `target` with the previous target folder that holds the gossip `.rlib` library.
 
 ## Use Cases
 

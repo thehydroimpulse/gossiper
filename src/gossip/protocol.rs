@@ -1,5 +1,5 @@
 use std::str::{Chars, from_char};
-use collections::hashmap::HashMap;
+use std::collections::hashmap::HashMap;
 use result::{GossipResult, GossipError};
 
 pub enum Protocol {

@@ -1,4 +1,4 @@
-use collections::HashSet;
+use std::collections::HashSet;
 
 #[deriving(Show)]
 pub struct State {
