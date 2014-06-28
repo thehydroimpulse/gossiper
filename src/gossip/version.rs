@@ -1,3 +1,1 @@
-pub enum ProtocolVersion {
-    Version(u8)
-}
+pub struct Version(u8);

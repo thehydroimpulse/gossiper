@@ -3,7 +3,6 @@ use result::GossipResult;
 use util::as_byte_slice;
 use connection::Connection;
 use response::Response;
-use encode::encode;
 use version::Version;
 
 /// Broadcast represents a single bi-directional communication with two
@@ -76,7 +75,8 @@ impl<'a, T> Broadcast<'a, T> {
     ///
     /// Size (RequestMessage | ResponseMessage)
     pub fn send(&self, connection: Box<Connection>) -> GossipResult<()> {
-        connection.send(encode(Version(1), &self.request))
+        Ok(())
+        //connection.send(encode(Version(1), &self.request))
     }
 }
 
