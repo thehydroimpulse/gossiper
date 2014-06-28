@@ -4,6 +4,9 @@ use util::as_byte_slice;
 use connection::Connection;
 use response::Response;
 use version::Version;
+use serialize::Encodable;
+use serialize::json::Encoder;
+use std::io::IoError;
 
 /// Broadcast represents a single bi-directional communication with two
 /// nodes within the cluster. The communication does **not** need to be
@@ -29,7 +32,7 @@ pub struct Broadcast<'a, T> {
     response: Option<|response: Box<Response>|: 'a>
 }
 
-impl<'a, T> Broadcast<'a, T> {
+impl<'a, T: Encodable<Encoder<'a>, IoError>> Broadcast<'a, T> {
 
     pub fn new(message: T) -> Broadcast<'a, T> {
         Broadcast {
@@ -67,13 +70,9 @@ impl<'a, T> Broadcast<'a, T> {
     ///     Err(err) => {}
     /// }
     /// ```
-    ///
-    /// Encoding Format:
-    ///
-    /// Size (RequestMessage | ResponseMessage)
     pub fn send(&self, connection: Box<Connection>) -> GossipResult<()> {
+        connection.send(Encoder::buffer_encode(&self.request));
         Ok(())
-        //connection.send(encode(Version(1), &self.request))
     }
 }
 

@@ -9,6 +9,3 @@ authors = [ "Daniel Fagnan <dnfagnan@gmail.com>" ]
 name = "gossip"
 path = "src/gossip/lib.rs"
 
-[dependencies.bencode]
-
-git = "https://github.com/arjantop/rust-bencode.git"
