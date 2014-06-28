@@ -3,6 +3,7 @@ use uuid::Uuid;
 use serialize::{Encodable, Decodable};
 use serialize::json::{Encoder, Decoder, DecoderError};
 use std::io::IoError;
+
 use version::Version;
 
 #[deriving(Encodable, Decodable, PartialEq, Show)]
@@ -19,7 +20,7 @@ pub struct Message<'a, T> {
 }
 
 impl<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>> Message<'a, T> {
-    fn new_request(version: Version, msg: T) -> Message<'a, T> {
+    pub fn new_request(version: Version, msg: T) -> Message<'a, T> {
         Message {
             version: version,
             ty: Request,
@@ -27,7 +28,7 @@ impl<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>> 
         }
     }
 
-    fn new_response(version: Version, msg: T) -> Message<'a, T> {
+    pub fn new_response(version: Version, msg: T) -> Message<'a, T> {
         Message {
             version: version,
             ty: Response,

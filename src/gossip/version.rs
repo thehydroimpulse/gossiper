@@ -1,4 +1,4 @@
 use serialize::{Encodable};
 
 #[deriving(Show, PartialEq, Encodable, Decodable)]
-pub struct Version(u8);
+pub struct Version(pub u8);

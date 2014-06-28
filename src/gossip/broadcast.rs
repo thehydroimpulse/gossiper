@@ -1,11 +1,13 @@
 use uuid::Uuid;
+use serialize::{Encodable, Decodable};
+use serialize::json::{Encoder, Decoder, DecoderError};
+use std::io::IoError;
+
 use result::GossipResult;
 use connection::Connection;
 use response::Response;
 use version::Version;
-use serialize::Encodable;
-use serialize::json::Encoder;
-use std::io::IoError;
+use message::Message;
 
 /// Broadcast represents a single bi-directional communication with two
 /// nodes within the cluster. The communication does **not** need to be
@@ -31,7 +33,7 @@ pub struct Broadcast<'a, T> {
     response: Option<|response: Box<Response>|: 'a>
 }
 
-impl<'a, T: Encodable<Encoder<'a>, IoError>> Broadcast<'a, T> {
+impl<'a, T: Clone + Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>> Broadcast<'a, T> {
 
     pub fn new(message: T) -> Broadcast<'a, T> {
         Broadcast {
@@ -69,8 +71,9 @@ impl<'a, T: Encodable<Encoder<'a>, IoError>> Broadcast<'a, T> {
     ///     Err(err) => {}
     /// }
     /// ```
-    pub fn send(&self, connection: Box<Connection>) -> GossipResult<()> {
-        connection.send(Encoder::buffer_encode(&self.request));
+    pub fn send<A: Connection>(&self, connection: A) -> GossipResult<()> {
+        let v = Version(1);
+        connection.send(Message::new_request(v, self.request.clone()));
         Ok(())
     }
 }
