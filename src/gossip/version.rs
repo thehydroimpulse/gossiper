@@ -1,4 +1,4 @@
-use serialize::{Encodable, Decodable};
+use serialize::{Encodable};
 
-#[deriving(Show, PartialEq, Decodable, Encodable)]
+#[deriving(Show, PartialEq, Encodable, Decodable)]
 pub struct Version(u8);

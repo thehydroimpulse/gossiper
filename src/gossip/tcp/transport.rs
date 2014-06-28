@@ -6,7 +6,6 @@ use std::collections::hashmap::HashMap;
 use serialize::Decodable;
 use serialize::json::{Decoder, DecoderError};
 use uuid::Uuid;
-use std::io::IoError;
 
 use transport::Transport;
 use result::{GossipResult, io_err};
@@ -37,7 +36,7 @@ pub struct TcpTransport {
     /// we need an effecient way to fetch them based on the node
     /// we want to communicate with. Each server will have it's own
     /// unique Uuidv4 which we'll use as the key for the hashmap.
-    connections: HashMap<Uuid, Box<Connection>>
+    connections: HashMap<Uuid, TcpConnection>
 }
 
 impl TcpTransport {

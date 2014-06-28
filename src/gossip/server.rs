@@ -1,3 +1,5 @@
+//! The server is the top-level API that one uses.
+
 use std::io::net::ip::IpAddr;
 use std::io::net::ip::SocketAddr;
 use std::io::{TcpListener, TcpStream, Listener, Acceptor, IoResult};

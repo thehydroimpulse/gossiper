@@ -1,5 +1,3 @@
-use std::fmt::{Show,Formatter};
-use std::fmt;
 use std::io;
 use std::str::SendStr;
 
