@@ -6,6 +6,8 @@ use std::io::net::tcp::TcpAcceptor;
 use state::State;
 use transport::Transport;
 use connection::Connection;
+use uuid::Uuid;
+use result::GossipResult;
 
 /// A server/node within a single gossip cluster.
 ///
@@ -25,40 +27,34 @@ use connection::Connection;
 ///
 /// Thus, the transport is used for accepting new connections.
 ///
-pub struct Server<'a> {
-
-    // Local address of the server. (Tcp)
+pub struct Server<'a, T> {
     ip: &'a str,
     port: u16,
-
-    // The state will contain the spanning tree implementation and all the members
-    // we'll be communicating with.
+    id: Uuid,
     state: State,
-
-    transport: Option<Box<Transport>>,
-    peers: Vec<Server<'a>>
+    transport: T,
+    peers: Vec<Server<'a, T>>
 }
 
-impl<'a> Server<'a> {
+impl<'a, T: Transport> Server<'a, T> {
     /// Create a new server given an address (ipv4 or ipv6) and a port.
     /// This function will **not** do any connection initializations. This
     /// is handled by further methods.
-    pub fn new(ip: &'a str, port: u16, transport: Option<Box<Transport>>) -> Server<'a> {
-        Server {
-            // We're handling the creation of the SocketAddr to allow
-            // for a more friendly API.
+    pub fn new(ip: &'a str, port: u16, transport: T) -> GossipResult<Server<'a, T>> {
+        Ok(Server {
             ip: ip,
             port: port,
+            id: Uuid::new_v4(),
             state: State::new(),
             transport: transport,
             peers: Vec::new()
-        }
+        })
     }
 
     // Try and join a specific cluster given a peer node.
-    pub fn join(&self, ip: &str, port: u16) -> IoResult<()> {
+    pub fn join(&mut self, ip: &str, port: u16) -> IoResult<()> {
         // Establish a new connection with the peer node.
-        let stream = TcpStream::connect(ip, port);
+        let mut connection: GossipResult<Box<Connection>> = self.transport.new_connection(ip, port);
 
         Ok(())
     }
@@ -70,26 +66,16 @@ mod test {
     use super::*;
     use std::io::net::ip::Ipv4Addr;
     use std::io::net::tcp::TcpStream;
+    use tcp::transport::TcpTransport;
+    use transport::Transport;
 
     #[test]
     fn new_server() {
-        let server = Server::new("127.0.0.1", 4989, None);
+        let tcp = TcpTransport::new("127.0.0.1", 5666).unwrap();
+        let server = Server::new("127.0.0.1", 4989, tcp).unwrap();
 
         assert_eq!(server.ip, "127.0.0.1");
         assert_eq!(server.port, 4989);
     }
 
-    #[test]
-    fn server_should_have_tcp() {
-        // let server = Server::new("127.0.0.1", 5993, None);
-        // let mut stream = TcpStream::connect(server.addr);
-    }
-
-    #[test]
-    fn server_join_cluster() {
-        let peer = Server::new("127.0.0.1", 5994, None);
-        let server = Server::new("127.0.0.1", 5944, None);
-
-        server.join("127.0.0.1", 5944);
-    }
 }

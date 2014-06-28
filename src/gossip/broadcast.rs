@@ -1,6 +1,5 @@
 use uuid::Uuid;
 use result::GossipResult;
-use util::as_byte_slice;
 use connection::Connection;
 use response::Response;
 use version::Version;
@@ -79,42 +78,44 @@ impl<'a, T: Encodable<Encoder<'a>, IoError>> Broadcast<'a, T> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use result::GossipResult;
+    use tcp::transport::TcpTransport;
+    use tcp::connection::TcpConnection;
+    use std::io::net::ip::Ipv4Addr;
+    use transport::Transport;
+    use message::Message;
+    use connection::Connection;
 
     #[test]
     fn has_no_response() {
-        let broadcast = Broadcast::new(123);
+        let broadcast = Broadcast::new(123 as int);
         assert!(broadcast.response.is_none());
     }
 
     #[test]
     fn add_response() {
-        let broadcast = Broadcast::new(123).with_response(|response| {});
+        let broadcast = Broadcast::new(123 as int).with_response(|response| {});
         assert!(broadcast.response.is_some());
     }
 
     #[test]
     fn send_broadcast() {
-        use tcp::transport::TcpTransport;
-        use tcp::connection::TcpConnection;
-        use std::io::net::ip::Ipv4Addr;
-        use transport::Transport;
-        use result::GossipResult;
 
         let addr       = "127.0.0.1";
         let port       = 5988;
 
         // Create a new transport to start accepting new
         // connections.
-        let transport  = TcpTransport::new(addr, port);
+        let transport  = TcpTransport::new(addr, port).unwrap();
 
         // Establish a new connection to the transport. This will
         // add a connection.
-        let connection = box TcpConnection::new(addr, port);
+        //let connection = box TcpConnection::new(addr, port);
 
-        let broadcast  = Broadcast::new(123);
+        //let broadcast  = Broadcast::new(123 as int);
 
         //broadcast.send(connection);
 
-        //let msg: GossipResult<Message> = transport.receive();
+        //let msg: GossipResult<int> = transport.receive();
     }
 }
