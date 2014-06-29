@@ -5,6 +5,8 @@ use std::collections::hashmap::HashMap;
 use std::comm::{channel, Sender, Receiver};
 use std::io::timer::Timer;
 use std::ops::Drop;
+use std::sync::{Arc, Mutex};
+use std::task;
 
 use serialize::Decodable;
 use serialize::json::{Decoder, DecoderError};
@@ -13,7 +15,7 @@ use uuid::Uuid;
 use transport::Transport;
 use result::{GossipResult, io_err};
 use connection::Connection;
-use message::{Message, Join};
+use message::Join;
 use tcp::connection::TcpConnection;
 use server::Server;
 
@@ -35,11 +37,7 @@ pub struct TcpTransport {
     ip: String,
     port: u16,
     sender: Sender<ChanMessage>,
-    /// A single server might have 10s or even 100s of connections, so
-    /// we need an effecient way to fetch them based on the node
-    /// we want to communicate with. Each server will have it's own
-    /// unique Uuidv4 which we'll use as the key for the hashmap.
-    connections: HashMap<Uuid, TcpConnection>
+    channels: Arc<Mutex<HashMap<Uuid, Sender<ChanMessage>>>>
 }
 
 impl TcpTransport {
@@ -56,7 +54,7 @@ impl TcpTransport {
             ip: ip.to_string(),
             port: port,
             sender: sender,
-            connections: HashMap::new()
+            channels: Arc::new(Mutex::new(HashMap::new()))
         };
 
         transport.handle(receiver);
@@ -68,12 +66,8 @@ impl TcpTransport {
         let ip = self.ip.clone();
         let port = self.port.clone();
 
-        let mut timer = Timer::new().unwrap();
-        let timeout = timer.oneshot(1000);
+        let result = task::try(proc() {
 
-        spawn(proc() {
-
-            let mut streams = Vec::new();
             let listener = TcpListener::bind(ip.as_slice(), port).unwrap();
             let mut acceptor = listener.listen().unwrap();
             let mut timer = Timer::new().unwrap();
@@ -81,6 +75,8 @@ impl TcpTransport {
             let timeout = timer.oneshot(500);
 
             loop {
+                // FIXME: I don't like this. This seems extremely
+                //        hacky.
                 select! {
                     val = rx.recv() => {
                         match val {
@@ -93,8 +89,14 @@ impl TcpTransport {
                     () = timeout.recv() => {}
                 }
 
-                let stream = acceptor.accept();
-                streams.push(stream);
+                let stream = match acceptor.accept() {
+                    Ok(stream) => stream,
+                    Err(err) => fail!("FOo")
+                };
+
+                spawn(proc() {
+                    
+                });
             }
         });
 

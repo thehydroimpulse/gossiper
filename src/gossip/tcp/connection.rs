@@ -5,9 +5,9 @@ use serialize::{Encodable, Decodable};
 
 use connection::Connection;
 use result::{GossipResult, io_err};
-use message::Message;
 use version::Version;
 
+#[deriving(Clone, Share)]
 pub struct TcpConnection {
     stream: TcpStream
 }
@@ -22,6 +22,12 @@ impl TcpConnection {
         })
     }
 
+    pub fn from_stream(stream: TcpStream) -> TcpConnection {
+        TcpConnection {
+            stream: stream
+        }
+    }
+
     pub fn close(&mut self) {
         drop(self);
     }
@@ -30,12 +36,11 @@ impl TcpConnection {
 impl Connection for TcpConnection {
 
     fn send<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&self, m: T) -> GossipResult<()> {
-        let msg = Message::new_request(Version(1), m);
-        let packets = Encoder::buffer_encode(&msg);
+        let packets = Encoder::buffer_encode(&m);
         Ok(())
     }
 
-    fn receive<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&self) -> GossipResult<Message<'a, T>> {
+    fn receive<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&self) -> GossipResult<T> {
         unimplemented!()
     }
 }
