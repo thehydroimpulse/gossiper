@@ -48,8 +48,6 @@ impl TcpTransport {
     /// Acceptor. Thus, having a local address of "0.0.0.0" is the common
     /// practice for the tcp server to be accessible from outside the
     /// current node.
-    ///
-    /// FIXME: Perhaps we should handle the errors a little nicer?
     pub fn listen(ip: &str, port: u16) -> GossipResult<TcpTransport> {
 
         let (sender, receiver) = channel();
@@ -75,6 +73,7 @@ impl TcpTransport {
 
         spawn(proc() {
 
+            let mut streams = Vec::new();
             let listener = TcpListener::bind(ip.as_slice(), port).unwrap();
             let mut acceptor = listener.listen().unwrap();
             let mut timer = Timer::new().unwrap();
@@ -95,6 +94,7 @@ impl TcpTransport {
                 }
 
                 let stream = acceptor.accept();
+                streams.push(stream);
             }
         });
 
@@ -104,7 +104,6 @@ impl TcpTransport {
 impl Drop for TcpTransport {
     fn drop(&mut self) {
         self.close();
-        drop(self);
     }
 }
 
