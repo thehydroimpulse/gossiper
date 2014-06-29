@@ -30,9 +30,9 @@ use result::GossipResult;
 /// Thus, the transport is used for accepting new connections.
 ///
 pub struct Server<'a, T> {
-    ip: &'a str,
-    port: u16,
-    id: Uuid,
+    pub id: Uuid,
+    pub ip: &'a str,
+    pub port: u16,
     state: State,
     transport: T,
     peers: Vec<Server<'a, T>>
@@ -44,9 +44,9 @@ impl<'a, T: Transport> Server<'a, T> {
     /// is handled by further methods.
     pub fn new(ip: &'a str, port: u16, transport: T) -> GossipResult<Server<'a, T>> {
         Ok(Server {
+            id: Uuid::new_v4(),
             ip: ip,
             port: port,
-            id: Uuid::new_v4(),
             state: State::new(),
             transport: transport,
             peers: Vec::new()
@@ -55,7 +55,7 @@ impl<'a, T: Transport> Server<'a, T> {
 
     // Try and join a specific cluster given a peer node.
     pub fn join(&mut self, ip: &str, port: u16) -> GossipResult<()> {
-        try!(self.transport.join(ip, port))
+        try!(self.transport.join(ip, port, &*self))
         Ok(())
     }
 }

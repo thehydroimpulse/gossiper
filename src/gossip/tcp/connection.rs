@@ -1,12 +1,12 @@
 use std::io::{TcpListener, TcpStream, IoError};
 use std::io::net::ip::{SocketAddr, IpAddr};
-use serialize::json::Encoder;
-use serialize::Encodable;
+use serialize::json::{Encoder, Decoder, DecoderError};
+use serialize::{Encodable, Decodable};
 
 use connection::Connection;
 use result::{GossipResult, io_err};
 use message::Message;
-
+use version::Version;
 
 pub struct TcpConnection {
     stream: TcpStream
@@ -25,12 +25,13 @@ impl TcpConnection {
 
 impl Connection for TcpConnection {
 
-    fn send<'a, T: Encodable<Encoder<'a>, IoError>>(&self, msg: Message<'a, T>) -> GossipResult<()> {
+    fn send<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&self, m: T) -> GossipResult<()> {
+        let msg = Message::new_request(Version(1), m);
         let packets = Encoder::buffer_encode(&msg);
         Ok(())
     }
 
-    fn receive<'a, T>(&self) -> GossipResult<Message<'a, T>> {
+    fn receive<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&self) -> GossipResult<Message<'a, T>> {
         unimplemented!()
     }
 }

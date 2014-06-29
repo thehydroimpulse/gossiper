@@ -5,6 +5,7 @@ use serialize::json::{Encoder, Decoder, DecoderError};
 use std::io::IoError;
 
 use version::Version;
+use server::Server;
 
 #[deriving(Encodable, Decodable, PartialEq, Show)]
 pub enum MessageType {
@@ -16,6 +17,7 @@ pub enum MessageType {
 pub struct Message<'a, T> {
     version: Version,
     ty: MessageType,
+    id: Uuid,
     msg: T
 }
 
@@ -24,6 +26,7 @@ impl<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>> 
         Message {
             version: version,
             ty: Request,
+            id: Uuid::new_v4(),
             msg: msg
         }
     }
@@ -32,6 +35,7 @@ impl<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>> 
         Message {
             version: version,
             ty: Response,
+            id: Uuid::new_v4(),
             msg: msg
         }
     }
@@ -46,11 +50,11 @@ pub struct Join {
 }
 
 impl Join {
-    pub fn new(id: Uuid, ip: String, port: u16) -> Join {
+    pub fn new<'a, T>(server: &Server<'a, T>) -> Join {
         Join {
-            id: id,
-            ip: ip,
-            port: port
+            id: server.id,
+            ip: server.ip.to_string(),
+            port: server.port
         }
     }
 }

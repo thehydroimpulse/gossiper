@@ -10,8 +10,9 @@ use uuid::Uuid;
 use transport::Transport;
 use result::{GossipResult, io_err};
 use connection::Connection;
-use message::Message;
+use message::{Message, Join};
 use tcp::connection::TcpConnection;
+use server::Server;
 
 /// A tcp transport has two fundamental elements within: An acceptor (server)
 /// and a set of connections. The only job of the acceptor is to, well,
@@ -69,10 +70,12 @@ impl Transport for TcpTransport {
     ///
     /// The peer node is responsible for propagating the new membership details
     /// through a new broadcast.
-    fn join(&self, ip: &str, port: u16) -> GossipResult<()> {
+    fn join<'a, T>(&self, ip: &str, port: u16, server: &Server<'a, T>) -> GossipResult<()> {
 
         // Establish a new connection with the peer node.
         let mut conn = try!(TcpConnection::connect(ip, port));
+
+        try!(conn.send(Join::new(server)));
 
         Ok(())
     }

@@ -107,17 +107,11 @@ mod test {
         let addr       = "127.0.0.1";
         let port       = 5988;
 
-        // Create a new transport to start accepting new
-        // connections.
         let transport  = TcpTransport::new(addr, port).unwrap();
+        let connection = TcpConnection::connect(addr, port).unwrap();
+        let broadcast  = Broadcast::new(123 as int);
 
-        // Establish a new connection to the transport. This will
-        // add a connection.
-        //let connection = box TcpConnection::new(addr, port);
-
-        //let broadcast  = Broadcast::new(123 as int);
-
-        //broadcast.send(connection);
+        broadcast.send(connection);
 
         //let msg: GossipResult<int> = transport.receive();
     }
