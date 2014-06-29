@@ -25,5 +25,5 @@ pub trait Transport {
     /// up any resources they allocated and shutdown the transport.
     ///
     /// New connections may not be accepted beyond this point.
-    fn close(&self) -> GossipResult<()>;
+    fn close(&mut self) -> GossipResult<()>;
 }

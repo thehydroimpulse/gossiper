@@ -21,6 +21,10 @@ impl TcpConnection {
             stream: stream
         })
     }
+
+    pub fn close(&mut self) {
+        drop(self);
+    }
 }
 
 impl Connection for TcpConnection {

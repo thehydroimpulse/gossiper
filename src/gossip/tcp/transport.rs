@@ -1,8 +1,11 @@
 use std::io::net::ip::{SocketAddr, IpAddr};
-use std::io::{TcpListener, TcpStream, Listener, Acceptor};
+use std::io::{TcpListener, TcpStream, Listener, Acceptor, TimedOut};
 use std::io::net::tcp::{TcpAcceptor, TcpStream};
-
 use std::collections::hashmap::HashMap;
+use std::comm::{channel, Sender, Receiver};
+use std::io::timer::Timer;
+use std::ops::Drop;
+
 use serialize::Decodable;
 use serialize::json::{Decoder, DecoderError};
 use uuid::Uuid;
@@ -14,6 +17,12 @@ use message::{Message, Join};
 use tcp::connection::TcpConnection;
 use server::Server;
 
+#[deriving(PartialEq, Show)]
+pub enum ChanMessage {
+    StopListening,
+    StartListening
+}
+
 /// A tcp transport has two fundamental elements within: An acceptor (server)
 /// and a set of connections. The only job of the acceptor is to, well,
 /// accept new connections and store them.
@@ -23,16 +32,9 @@ use server::Server;
 /// means, if node A wants to communicate with server B, it'll look up
 /// server's B connection and send a message through that medium.
 pub struct TcpTransport {
-    /// The acceptor is responsible for accepting new connections and
-    /// storing them appropriately. The only times a new connection is
-    /// added to the node are:
-    ///     * A new node has joined the cluster and has to establish a
-    ///       connection with each other node.
-    ///     * A connection we had has disconnected and the disconnected
-    ///       node has initiated a new connection with us. This can be
-    ///       for failed nodes coming back alone or partitioned nodes.
-    acceptor: TcpAcceptor,
-
+    ip: String,
+    port: u16,
+    sender: Sender<ChanMessage>,
     /// A single server might have 10s or even 100s of connections, so
     /// we need an effecient way to fetch them based on the node
     /// we want to communicate with. Each server will have it's own
@@ -49,13 +51,67 @@ impl TcpTransport {
     ///
     /// FIXME: Perhaps we should handle the errors a little nicer?
     pub fn listen(ip: &str, port: u16) -> GossipResult<TcpTransport> {
-        let listener = try!(TcpListener::bind(ip, port).map_err(io_err));
-        let acceptor = try!(listener.listen().map_err(io_err));
 
-        Ok(TcpTransport {
-            acceptor: acceptor,
+        let (sender, receiver) = channel();
+
+        let mut transport = TcpTransport {
+            ip: ip.to_string(),
+            port: port,
+            sender: sender,
             connections: HashMap::new()
-        })
+        };
+
+        transport.handle(receiver);
+
+        Ok(transport)
+    }
+
+    pub fn handle(&mut self, rx: Receiver<ChanMessage>) {
+        let ip = self.ip.clone();
+        let port = self.port.clone();
+
+        let mut timer = Timer::new().unwrap();
+        let timeout = timer.oneshot(1000);
+
+        spawn(proc() {
+
+            let listener = match TcpListener::bind(ip.as_slice(), port).map_err(io_err) {
+                Ok(listener) => listener,
+                Err(err) => fail!("Something bad happened. {}", err)
+            };
+
+            let mut acceptor = match listener.listen().map_err(io_err) {
+                Ok(acceptor) => acceptor,
+                Err(err) => fail!("Oops: {}", err)
+            };
+
+            let mut accept = true;
+
+            for socket in acceptor.incoming() {
+                if !accept { break }
+
+                match rx.try_recv() {
+                    Ok(val) => {
+                        match val {
+                            StopListening => {
+                                accept = false;
+                                break;
+                            },
+                            _ => {}
+                        }
+                    },
+                    Err(err) => {}
+                }
+            }
+        });
+
+    }
+}
+
+impl Drop for TcpTransport {
+    fn drop(&mut self) {
+        self.close();
+        drop(self);
     }
 }
 
@@ -88,8 +144,8 @@ impl Transport for TcpTransport {
     /// Terminate the accept, along with disconnecting all connections. However,
     /// before doing so, the node will send one last broadcast letting the
     /// cluster know it's going offline.
-    fn close(&self) -> GossipResult<()> {
-        drop(self);
+    fn close(&mut self) -> GossipResult<()> {
+        self.sender.send(StopListening);
         Ok(())
     }
 }
@@ -101,13 +157,17 @@ mod test {
     use std::io::net::ip::{Ipv4Addr};
     use tcp::connection::TcpConnection;
     use connection::Connection;
+    use transport::Transport;
 
     #[test]
     fn new_transport() {
         let addr = "127.0.0.1";
         let port = 5499;
 
-        let transport = TcpTransport::listen(addr, port);
-        let connection = TcpConnection::connect(addr, port);
+        let mut transport = TcpTransport::listen(addr, port).unwrap();
+        let mut connection = TcpConnection::connect(addr, port).unwrap();
+
+        //connection.close();
+        //transport.close();
     }
 }
