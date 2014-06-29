@@ -75,18 +75,10 @@ impl TcpTransport {
 
         spawn(proc() {
 
-            let listener = match TcpListener::bind(ip.as_slice(), port).map_err(io_err) {
-                Ok(listener) => listener,
-                Err(err) => fail!("Something bad happened. {}", err)
-            };
-
-            let mut acceptor = match listener.listen().map_err(io_err) {
-                Ok(acceptor) => acceptor,
-                Err(err) => fail!("Oops: {}", err)
-            };
-
-            let mut accept = true;
+            let listener = TcpListener::bind(ip.as_slice(), port).unwrap();
+            let mut acceptor = listener.listen().unwrap();
             let mut timer = Timer::new().unwrap();
+            let mut accept = true;
             let timeout = timer.oneshot(500);
 
             loop {
@@ -99,10 +91,7 @@ impl TcpTransport {
                             _ => {}
                         }
                     },
-                    () = timeout.recv() => {
-                        println!("timed out")
-                        break;
-                    }
+                    () = timeout.recv() => {}
                 }
 
                 let stream = acceptor.accept();
