@@ -107,11 +107,11 @@ mod test {
         let addr       = "127.0.0.1";
         let port       = 5988;
 
-        //let transport  = TcpTransport::listen(addr, port).unwrap();
-        //let connection = TcpConnection::connect(addr, port).unwrap();
-        //let broadcast  = Broadcast::new(123 as int);
+        let transport  = TcpTransport::listen(addr, port).unwrap();
+        let connection = TcpConnection::connect(addr, port).unwrap();
+        let broadcast  = Broadcast::new(123 as int);
 
-        //broadcast.send(connection);
+        broadcast.send(connection);
 
         //let msg: GossipResult<int> = transport.receive();
     }

@@ -86,22 +86,26 @@ impl TcpTransport {
             };
 
             let mut accept = true;
+            let mut timer = Timer::new().unwrap();
+            let timeout = timer.oneshot(500);
 
-            for socket in acceptor.incoming() {
-                if !accept { break }
-
-                match rx.try_recv() {
-                    Ok(val) => {
+            loop {
+                select! {
+                    val = rx.recv() => {
                         match val {
                             StopListening => {
-                                accept = false;
                                 break;
                             },
                             _ => {}
                         }
                     },
-                    Err(err) => {}
+                    () = timeout.recv() => {
+                        println!("timed out")
+                        break;
+                    }
                 }
+
+                let stream = acceptor.accept();
             }
         });
 
@@ -130,7 +134,6 @@ impl Transport for TcpTransport {
 
         // Establish a new connection with the peer node.
         let mut conn = try!(TcpConnection::connect(ip, port));
-
         try!(conn.send(Join::new(server)));
 
         Ok(())
@@ -166,8 +169,5 @@ mod test {
 
         let mut transport = TcpTransport::listen(addr, port).unwrap();
         let mut connection = TcpConnection::connect(addr, port).unwrap();
-
-        //connection.close();
-        //transport.close();
     }
 }
