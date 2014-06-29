@@ -48,7 +48,7 @@ impl TcpTransport {
     /// current node.
     ///
     /// FIXME: Perhaps we should handle the errors a little nicer?
-    pub fn new(ip: &str, port: u16) -> GossipResult<TcpTransport> {
+    pub fn listen(ip: &str, port: u16) -> GossipResult<TcpTransport> {
         let listener = try!(TcpListener::bind(ip, port).map_err(io_err));
         let acceptor = try!(listener.listen().map_err(io_err));
 
@@ -107,7 +107,7 @@ mod test {
         let addr = "127.0.0.1";
         let port = 5499;
 
-        let transport = TcpTransport::new(addr, port);
+        let transport = TcpTransport::listen(addr, port);
         let connection = TcpConnection::connect(addr, port);
     }
 }
