@@ -1,10 +1,11 @@
 use std::io::{TcpListener, TcpStream, IoError};
 use std::io::net::ip::{SocketAddr, IpAddr};
 use serialize::json::{Encoder, Decoder, DecoderError};
+use serialize::json;
 use serialize::{Encodable, Decodable};
 
 use connection::Connection;
-use result::{GossipResult, io_err};
+use result::{GossipResult, io_err, decoder_err};
 use version::Version;
 
 #[deriving(Clone, Share)]
@@ -35,14 +36,19 @@ impl TcpConnection {
 
 impl Connection for TcpConnection {
 
-    fn send<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&self, m: T) -> GossipResult<()> {
+    fn send<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&mut self, m: T) -> GossipResult<()> {
         let packets = Encoder::buffer_encode(&m);
+        write!(self.stream,  "{}", packets.as_slice());
         Ok(())
     }
 
-    fn receive<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&self) -> GossipResult<T> {
-        unimplemented!()
-    }
+    fn receive<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&mut self) -> GossipResult<T> {
+        let raw = try!(self.stream.read_to_str().map_err(io_err));
+        let json_obj = json::from_str(raw.as_slice());
+        let mut decoder = json::Decoder::new(json_obj.unwrap());
+        let obj: T = try!(Decodable::decode(&mut decoder).map_err(decoder_err));
+        Ok(obj)
+   }
 }
 
 #[cfg(test)]

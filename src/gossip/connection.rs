@@ -5,6 +5,6 @@ use std::io::IoError;
 use result::GossipResult;
 
 pub trait Connection {
-    fn send<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&self, msg: T) -> GossipResult<()>;
-    fn receive<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&self) -> GossipResult<T>;
+    fn send<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&mut self, msg: T) -> GossipResult<()>;
+    fn receive<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&mut self) -> GossipResult<T>;
 }

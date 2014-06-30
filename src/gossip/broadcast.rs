@@ -70,7 +70,7 @@ impl<'a, T: Clone + Encodable<Encoder<'a>, IoError> + Decodable<Decoder, Decoder
     ///     Err(err) => {}
     /// }
     /// ```
-    pub fn send<A: Connection>(&self, connection: A) -> GossipResult<()> {
+    pub fn send<A: Connection>(&self, connection: &mut A) -> GossipResult<()> {
         connection.send(self.request.clone());
         Ok(())
     }
@@ -105,7 +105,7 @@ mod test {
         let port       = 5988;
 
         let transport  = TcpTransport::listen(addr, port).unwrap();
-        let connection = TcpConnection::connect(addr, port).unwrap();
+        let mut connection = &mut TcpConnection::connect(addr, port).unwrap();
         let broadcast  = Broadcast::new(123 as int);
 
         broadcast.send(connection);

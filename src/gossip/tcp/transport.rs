@@ -25,6 +25,10 @@ pub enum AcceptingMsg {
     Noop
 }
 
+pub enum StreamMsg {
+    Incoming(TcpConnection)
+}
+
 /// Wrap the common idiom of accepting a string and port into a
 /// single source that's easier to pass around. It also mitigates the
 /// naming issue of port (u16) and port (Receiver).
@@ -46,6 +50,7 @@ impl Addr {
 
 /// Alias the type to be easier to use.
 pub type AcceptingTask = Sender<AcceptingMsg>;
+pub type StreamTask    = Sender<StreamMsg>;
 
 /// The AcceptingManager is responsible for managing incoming
 /// TCP connections/streams. The manager first creates a new TcpListener
@@ -105,6 +110,48 @@ impl AcceptingManager {
             }
         }
     }
+}
+
+pub struct StreamManager {
+    stream: TcpConnection,
+    port: Receiver<StreamMsg>
+}
+
+impl StreamManager {
+
+    pub fn new(stream: TcpConnection, port: Receiver<StreamMsg>) -> StreamManager {
+        StreamManager {
+            stream: stream,
+            port: port
+        }
+    }
+
+    pub fn start(&mut self) {
+
+        loop {
+            match self.port.try_recv() {
+                Ok(msg) => {
+                    match msg {
+                        _ => {}
+                    }
+                },
+                Err(e) => {}
+            }
+        }
+    }
+}
+
+pub fn create_stream_task(stream: TcpConnection) -> StreamTask {
+    let (setup_chan, setup_port) = channel();
+    let builder = TaskBuilder::new().named("StreamManager");
+
+    builder.spawn(proc() {
+        let (chan, port) = channel();
+        setup_chan.send(chan);
+        StreamManager::new(stream, port).start();
+    });
+
+    setup_port.recv()
 }
 
 /// Create a new AcceptingTask responsible for accepting brand new
