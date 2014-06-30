@@ -137,6 +137,7 @@ impl StreamManager {
                 },
                 Err(e) => {}
             }
+
         }
     }
 }
@@ -227,7 +228,7 @@ impl Transport for TcpTransport {
 
         // Establish a new connection with the peer node.
         let mut conn = try!(TcpConnection::connect(ip, port));
-        try!(conn.send(Join::new(server)));
+        try!(conn.send(Message::new(Join::new(server))));
 
         Ok(())
     }

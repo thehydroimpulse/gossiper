@@ -7,6 +7,7 @@ use result::GossipResult;
 use connection::Connection;
 use response::Response;
 use version::Version;
+use message::Message;
 
 /// Broadcast represents a single bi-directional communication with two
 /// nodes within the cluster. The communication does **not** need to be
@@ -71,7 +72,7 @@ impl<'a, T: Clone + Encodable<Encoder<'a>, IoError> + Decodable<Decoder, Decoder
     /// }
     /// ```
     pub fn send<A: Connection>(&self, connection: &mut A) -> GossipResult<()> {
-        connection.send(self.request.clone());
+        connection.send(Message::new(self.request.clone()));
         Ok(())
     }
 }

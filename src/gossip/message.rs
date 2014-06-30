@@ -1,17 +1,23 @@
 use uuid::Uuid;
-use server::Server;
 use std::fmt::{Show, Formatter, FormatError};
+use serialize::{Encodable, Decodable};
+use serialize::json::{Encoder, Decoder, DecoderError};
+use std::io::IoError;
 
-pub trait Message {}
+use server::Server;
 
-impl Show for Box<Message + Send> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), FormatError> {
-        try!(write!(f, "Message"));
-        Ok(())
-    }
+#[deriving(Encodable, Decodable)]
+pub struct Message<T> {
+    msg: T
 }
 
-impl<T: Share> Message for T {}
+impl<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>> Message<T> {
+    pub fn new(msg: T) -> Message<T> {
+        Message {
+            msg: msg
+        }
+    }
+}
 
 #[deriving(Clone, Encodable, Decodable, PartialEq, Show)]
 pub struct Join {
