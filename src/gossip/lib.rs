@@ -1,6 +1,6 @@
 #![crate_id = "gossip"]
 #![crate_type = "lib"]
-#![feature(globs, macro_rules)]
+#![feature(globs, macro_rules, unsafe_destructor)]
 #![deny(missing_doc)]
 #![allow(unused_must_use,dead_code, unused_imports, unused_variable)]
 

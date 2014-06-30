@@ -1,5 +1,5 @@
 use std::io::net::ip::{SocketAddr, IpAddr};
-use std::io::{TcpListener, TcpStream, Listener, Acceptor, TimedOut};
+use std::io::{TcpListener, TcpStream, Listener, Acceptor, TimedOut, IoError};
 use std::io::net::tcp::{TcpAcceptor, TcpStream};
 use std::collections::hashmap::HashMap;
 use std::comm::{channel, Sender, Receiver};
@@ -7,22 +7,22 @@ use std::io::timer::Timer;
 use std::ops::Drop;
 use std::sync::{Arc, Mutex};
 use std::task;
+use std::clone::Clone;
 
-use serialize::Decodable;
-use serialize::json::{Decoder, DecoderError};
+use serialize::{Decodable, Encodable};
+use serialize::json::{Encoder, Decoder, DecoderError};
 use uuid::Uuid;
 
 use transport::Transport;
 use result::{GossipResult, io_err};
 use connection::Connection;
-use message::Join;
+use message::{Message, Join};
 use tcp::connection::TcpConnection;
 use server::Server;
 
-#[deriving(PartialEq, Show)]
 pub enum ChanMessage {
     StopListening,
-    StartListening
+    NewMessage(Box<Message + Send>)
 }
 
 /// A tcp transport has two fundamental elements within: An acceptor (server)
@@ -36,8 +36,7 @@ pub enum ChanMessage {
 pub struct TcpTransport {
     ip: String,
     port: u16,
-    sender: Sender<ChanMessage>,
-    channels: Arc<Mutex<HashMap<Uuid, Sender<ChanMessage>>>>
+    sender: Sender<ChanMessage>
 }
 
 impl TcpTransport {
@@ -53,8 +52,7 @@ impl TcpTransport {
         let mut transport = TcpTransport {
             ip: ip.to_string(),
             port: port,
-            sender: sender,
-            channels: Arc::new(Mutex::new(HashMap::new()))
+            sender: sender
         };
 
         transport.handle(receiver);
@@ -66,7 +64,7 @@ impl TcpTransport {
         let ip = self.ip.clone();
         let port = self.port.clone();
 
-        let result = task::try(proc() {
+        spawn(proc() {
 
             let listener = TcpListener::bind(ip.as_slice(), port).unwrap();
             let mut acceptor = listener.listen().unwrap();
@@ -76,17 +74,17 @@ impl TcpTransport {
 
             loop {
                 // FIXME: I don't like this. This seems extremely
-                //        hacky.
+                // hacky.
                 select! {
-                    val = rx.recv() => {
-                        match val {
-                            StopListening => {
-                                break;
-                            },
-                            _ => {}
-                        }
-                    },
-                    () = timeout.recv() => {}
+                   val = rx.recv() => {
+                       match val {
+                           StopListening => {
+                               break;
+                           },
+                           _ => {}
+                       }
+                   },
+                   () = timeout.recv() => {}
                 }
 
                 let stream = match acceptor.accept() {
@@ -103,6 +101,7 @@ impl TcpTransport {
     }
 }
 
+#[unsafe_destructor]
 impl Drop for TcpTransport {
     fn drop(&mut self) {
         self.close();
