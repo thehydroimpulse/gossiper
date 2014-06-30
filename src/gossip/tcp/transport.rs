@@ -20,7 +20,7 @@ use tcp::connection::TcpConnection;
 use server::Server;
 
 /// Messages that the AcceptingManager is communicating with.
-enum AcceptingMsg {
+pub enum AcceptingMsg {
     Exit
 }
 
@@ -44,7 +44,7 @@ impl Addr {
 }
 
 /// Alias the type to be easier to use.
-type AcceptingTask = Sender<AcceptingMsg>;
+pub type AcceptingTask = Sender<AcceptingMsg>;
 
 /// The AcceptingManager is responsible for managing incoming
 /// TCP connections/streams. The manager first creates a new TcpListener
@@ -83,8 +83,16 @@ impl AcceptingManager {
         let acceptor = TcpListener::bind(self.addr.ip.as_slice(), self.addr.port).listen();
 
         loop {
-            match self.port.recv() {
-                Exit => break
+            match self.port.try_recv() {
+                Ok(val) => {
+                    match val {
+                        Exit => {
+                            drop(acceptor);
+                            break
+                        }
+                    }
+                },
+                Err(err) => {}
             }
         }
     }
@@ -95,7 +103,7 @@ impl AcceptingManager {
 ///
 /// We initialize a new setup channel that is used to return the correct
 /// Sender, which is created inside the task.
-fn create_accepting_task(addr: Addr) -> AcceptingTask {
+pub fn create_accepting_task(addr: Addr) -> AcceptingTask {
     let (setup_chan, setup_port) = channel();
     let builder = TaskBuilder::new().named("AcceptingManager");
 
@@ -190,6 +198,14 @@ mod test {
     use tcp::connection::TcpConnection;
     use connection::Connection;
     use transport::Transport;
+
+    #[test]
+    fn accepting_manager() {
+        let addr = Addr::new("127.0.0.1".to_string(), 6553);
+        let chan: AcceptingTask = create_accepting_task(addr);
+        let conn = TcpConnection::connect("127.0.0.1", 6553).unwrap();
+        chan.send(Exit);
+    }
 
     #[test]
     fn new_transport() {
