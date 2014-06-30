@@ -20,11 +20,13 @@ For many systems and tasks, this isn't desireable. There are situations where ha
 
 ## Why Rust?
 
-[Rust](http://www.rust-lang.org/) is Mozilla's new systems programming language that focuses on safety, concurrency and practicality. It doesn't have GC (but you *can* have task-local GC!); it's also in the same realm as C++, but without many of the issues and complexities.
+[Rust](http://www.rust-lang.org/) is Mozilla's new systems programming language that focuses on safety, concurrency and practicality. It doesn't have a mandatory GC, and focuses on safety, without sacrificing performance.
 
-I believe Rust is perfect for distributed systems which are highly performant and fault tolerant. When talking about IO, most languages have (say C, C++, etc...) have support for native threads (pthreads, for example). However, there have been newer languages that support more elaborate concurrency primitives in the form of green threads (Go, for example). But there's an obvious trade-off here. You either have native threads *or* green threads. Systems built in these languages are locked to that implementation.
+I believe Rust is perfect for distributed systems which are highly performant and fault tolerant. When talking about IO, most languages have (say C, C++, etc...) support for native threads (pthreads, for example). However, there have been newer languages that support more elaborate concurrency primitives in the form of green threads (Go, for example). But there's an obvious trade-off here. You either have native threads *or* green threads. Systems built in these languages are locked to that implementation.
 
 Rust, on the other hand, doesn't have this limitation. It ships with a single API for managing tasks (akin to threads), but, it has two separate implementations: green and native. This allows someone to build systems without picking either of them. The user gets to pick based on which crate they bundle.
+
+Rust is also more in-line to Erlang in terms of error handling. Each task is completely isolated and can be killed, then restarted.
 
 ## Getting Started
 
