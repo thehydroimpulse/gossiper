@@ -5,8 +5,7 @@ use std::collections::hashmap::HashMap;
 use std::comm::{channel, Sender, Receiver};
 use std::io::timer::Timer;
 use std::ops::Drop;
-use std::sync::{Arc, Mutex};
-use std::task;
+use std::task::TaskBuilder;
 use std::clone::Clone;
 
 use serialize::{Decodable, Encodable};
@@ -20,9 +19,93 @@ use message::{Message, Join};
 use tcp::connection::TcpConnection;
 use server::Server;
 
-pub enum ChanMessage {
-    StopListening,
-    NewMessage(Box<Message + Send>)
+/// Messages that the AcceptingManager is communicating with.
+enum AcceptingMsg {
+    Exit
+}
+
+/// Wrap the common idiom of accepting a string and port into a
+/// single source that's easier to pass around. It also mitigates the
+/// naming issue of port (u16) and port (Receiver).
+#[deriving(Show, PartialEq, Clone)]
+pub struct Addr {
+    pub ip: String,
+    pub port: u16
+}
+
+impl Addr {
+    /// Create a new instance of the Addr record.
+    pub fn new(ip: String, port: u16) -> Addr {
+        Addr {
+            ip: ip,
+            port: port
+        }
+    }
+}
+
+/// Alias the type to be easier to use.
+type AcceptingTask = Sender<AcceptingMsg>;
+
+/// The AcceptingManager is responsible for managing incoming
+/// TCP connections/streams. The manager first creates a new TcpListener
+/// and TcpAcceptor in order to start listening in. All communication
+/// then happens through the use of channels. A new StreamManager will
+/// be created in order to handle the appropriate streams.
+struct AcceptingManager {
+    port: Receiver<AcceptingMsg>,
+    acceptor: Option<TcpAcceptor>,
+    addr: Addr
+}
+
+impl AcceptingManager {
+    /// Given a Receiver (port) to read new messages from and an address
+    /// create a new context. This does **not** actually create a new
+    /// TcpAcceptor and doesn't bind to anything. That happens in the
+    /// .start() method.
+    pub fn new(port: Receiver<AcceptingMsg>, addr: Addr) -> AcceptingManager {
+        AcceptingManager {
+            port: port,
+            acceptor: None,
+            addr: addr
+        }
+    }
+
+    /// Start listening on the Tcp address and start processing incoming
+    /// streams. We also need to continue listening on the channel to see if
+    /// we should be shutting down or not.
+    ///
+    /// Note: It's impossible to shutdown while the task is blocking on
+    ///       acceptor.accept() and no more connections are coming through.
+    ///       You'll have to physically shutdown the whole process, which is
+    ///       kinda ugly, but works.
+    pub fn start(&mut self) {
+
+        let acceptor = TcpListener::bind(self.addr.ip.as_slice(), self.addr.port).listen();
+
+        loop {
+            match self.port.recv() {
+                Exit => break
+            }
+        }
+    }
+}
+
+/// Create a new AcceptingTask responsible for accepting brand new
+/// tcp connections and passing them on.
+///
+/// We initialize a new setup channel that is used to return the correct
+/// Sender, which is created inside the task.
+fn create_accepting_task(addr: Addr) -> AcceptingTask {
+    let (setup_chan, setup_port) = channel();
+    let builder = TaskBuilder::new().named("AcceptingManager");
+
+    builder.spawn(proc() {
+        let (chan, port) = channel();
+        setup_chan.send(chan);
+        AcceptingManager::new(port, addr).start();
+    });
+
+    setup_port.recv()
 }
 
 /// A tcp transport has two fundamental elements within: An acceptor (server)
@@ -34,9 +117,8 @@ pub enum ChanMessage {
 /// means, if node A wants to communicate with server B, it'll look up
 /// server's B connection and send a message through that medium.
 pub struct TcpTransport {
-    ip: String,
-    port: u16,
-    sender: Sender<ChanMessage>
+    addr: Addr,
+    sender: AcceptingTask
 }
 
 impl TcpTransport {
@@ -47,57 +129,15 @@ impl TcpTransport {
     /// current node.
     pub fn listen(ip: &str, port: u16) -> GossipResult<TcpTransport> {
 
-        let (sender, receiver) = channel();
+        let addr = Addr::new(ip.to_string(), port);
+        let sender = create_accepting_task(addr.clone());
 
         let mut transport = TcpTransport {
-            ip: ip.to_string(),
-            port: port,
+            addr: addr,
             sender: sender
         };
 
-        transport.handle(receiver);
-
         Ok(transport)
-    }
-
-    pub fn handle(&mut self, rx: Receiver<ChanMessage>) {
-        let ip = self.ip.clone();
-        let port = self.port.clone();
-
-        spawn(proc() {
-
-            let listener = TcpListener::bind(ip.as_slice(), port).unwrap();
-            let mut acceptor = listener.listen().unwrap();
-            let mut timer = Timer::new().unwrap();
-            let mut accept = true;
-            let timeout = timer.oneshot(500);
-
-            loop {
-                // FIXME: I don't like this. This seems extremely
-                // hacky.
-                select! {
-                   val = rx.recv() => {
-                       match val {
-                           StopListening => {
-                               break;
-                           },
-                           _ => {}
-                       }
-                   },
-                   () = timeout.recv() => {}
-                }
-
-                let stream = match acceptor.accept() {
-                    Ok(stream) => stream,
-                    Err(err) => fail!("FOo")
-                };
-
-                spawn(proc() {
-                    
-                });
-            }
-        });
-
     }
 }
 
@@ -137,7 +177,7 @@ impl Transport for TcpTransport {
     /// before doing so, the node will send one last broadcast letting the
     /// cluster know it's going offline.
     fn close(&mut self) -> GossipResult<()> {
-        self.sender.send(StopListening);
+        self.sender.send(Exit);
         Ok(())
     }
 }
