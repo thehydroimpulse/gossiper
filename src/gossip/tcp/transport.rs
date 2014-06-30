@@ -21,7 +21,8 @@ use server::Server;
 
 /// Messages that the AcceptingManager is communicating with.
 pub enum AcceptingMsg {
-    Exit
+    Exit,
+    Noop
 }
 
 /// Wrap the common idiom of accepting a string and port into a
@@ -80,7 +81,8 @@ impl AcceptingManager {
     ///       kinda ugly, but works.
     pub fn start(&mut self) {
 
-        let acceptor = TcpListener::bind(self.addr.ip.as_slice(), self.addr.port).listen();
+        let mut acceptor = TcpListener::bind(self.addr.ip.as_slice(), self.addr.port).listen().unwrap();
+        acceptor.set_timeout(Some(0));
 
         loop {
             match self.port.try_recv() {
@@ -89,10 +91,17 @@ impl AcceptingManager {
                         Exit => {
                             drop(acceptor);
                             break
-                        }
+                        },
+                        _ => {}
                     }
                 },
                 Err(err) => {}
+            }
+
+            match acceptor.accept() {
+                Ok(socket) => {},
+                Err(ref e) if e.kind == TimedOut => {},
+                Err(e) => println!("err: {}", e)
             }
         }
     }
@@ -195,6 +204,8 @@ impl Transport for TcpTransport {
 mod test {
     use super::*;
     use std::io::net::ip::{Ipv4Addr};
+    use std::io::Timer;
+    use std::comm::channel;
     use tcp::connection::TcpConnection;
     use connection::Connection;
     use transport::Transport;
