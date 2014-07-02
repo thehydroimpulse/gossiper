@@ -3,6 +3,7 @@ before_install:
   - sudo apt-get update
 
 install:
+  - sudo apt-get install cargo
   - wget http://static.rust-lang.org/dist/rust-nightly-x86_64-unknown-linux-gnu.tar.gz
   - tar -xzvf rust-nightly-x86_64-unknown-linux-gnu.tar.gz
   - export PATH=$PATH:$(pwd)/rust-nightly-x86_64-unknown-linux-gnu/bin
