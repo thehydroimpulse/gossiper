@@ -38,19 +38,12 @@ cargo build
 
 ## Installing Gossip
 
-Gossip is now a Cargo package. You can simply include Gossip as a dependency.
+Gossip is a Cargo package. You can simply include Gossip as a dependency.
 
 ```toml
 # Cargo.toml
-
 [dependencies.gossip]
-git = "https://github.com/TheHydroImpulse/gossip.rs"
-```
-
-Now run:
-
-```
-cargo build
+git = "https://github.com/thehydroimpulse/gossip.rs"
 ```
 
 ## Use Cases
