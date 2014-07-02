@@ -66,19 +66,4 @@ mod test {
     use std::io::net::ip::Ipv4Addr;
     use transport::Transport;
     use connection::Connection;
-
-    #[test]
-    fn send_broadcast() {
-
-        let addr       = "127.0.0.1";
-        let port       = 5988;
-
-        let transport  = TcpTransport::listen(addr, port).unwrap();
-        let mut connection = &mut TcpConnection::connect(addr, port).unwrap();
-        let broadcast  = Broadcast::new(123 as int);
-
-        broadcast.send(connection);
-
-        //let msg: GossipResult<int> = transport.receive();
-    }
 }
