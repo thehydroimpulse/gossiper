@@ -260,20 +260,20 @@ mod test {
     use connection::Connection;
     use transport::Transport;
 
+    static port: u16 = 6553;
+    static addr: &'static str = "127.0.0.1";
+
     #[test]
     fn accepting_manager() {
-        let addr = Addr::new("127.0.0.1".to_string(), 6553);
-        let chan: AcceptingTask = create_accepting_task(addr);
-        let conn = TcpConnection::connect("127.0.0.1", 6553).unwrap();
+        let a = Addr::new(addr.to_string(), port);
+        let chan: AcceptingTask = create_accepting_task(a);
+        let conn = TcpConnection::connect(addr, port).unwrap();
         chan.send(Exit);
     }
 
     #[test]
     fn new_transport() {
-        let addr = "127.0.0.1";
-        let port = 5499;
-
-        let mut transport = TcpTransport::listen(addr, port).unwrap();
-        let mut connection = TcpConnection::connect(addr, port).unwrap();
+        let mut transport = TcpTransport::listen(addr, 8944).unwrap();
+        let mut connection = TcpConnection::connect(addr, 8944).unwrap();
     }
 }
