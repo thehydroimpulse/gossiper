@@ -8,6 +8,7 @@ use connection::Connection;
 use result::{GossipResult, io_err, decoder_err};
 use version::Version;
 use message::Message;
+use broadcast::Broadcast;
 
 #[deriving(Clone, Share)]
 pub struct TcpConnection {
@@ -37,17 +38,21 @@ impl TcpConnection {
 
 impl Connection for TcpConnection {
 
-    fn send<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&mut self, m: Message<T>) -> GossipResult<()> {
+    fn send<'a, T: Message
+            + Encodable<Encoder<'a>, IoError>
+            + Decodable<Decoder, DecoderError>> (&mut self, m: Broadcast<T>) -> GossipResult<()> {
         let packets = Encoder::buffer_encode(&m);
         write!(self.stream,  "{}", packets.as_slice());
         Ok(())
     }
 
-    fn receive<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>>(&mut self) -> GossipResult<Message<T>> {
+    fn receive<'a, T: Message
+            + Encodable<Encoder<'a>, IoError>
+            + Decodable<Decoder, DecoderError>>(&mut self) -> GossipResult<Broadcast<T>> {
         let raw = try!(self.stream.read_to_str().map_err(io_err));
         let json_obj = json::from_str(raw.as_slice());
         let mut decoder = json::Decoder::new(json_obj.unwrap());
-        let obj: Message<T> = try!(Decodable::decode(&mut decoder).map_err(decoder_err));
+        let obj: Broadcast<T> = try!(Decodable::decode(&mut decoder).map_err(decoder_err));
         Ok(obj)
    }
 }

@@ -18,6 +18,7 @@ use connection::Connection;
 use message::{Message, Join};
 use tcp::connection::TcpConnection;
 use server::Server;
+use broadcast::Broadcast;
 
 /// Messages that the AcceptingManager is communicating with.
 pub enum AcceptingMsg {
@@ -90,6 +91,7 @@ impl AcceptingManager {
         acceptor.set_timeout(Some(0));
 
         loop {
+
             match self.port.try_recv() {
                 Ok(val) => {
                     match val {
@@ -228,7 +230,7 @@ impl Transport for TcpTransport {
 
         // Establish a new connection with the peer node.
         let mut conn = try!(TcpConnection::connect(ip, port));
-        try!(conn.send(Message::new(Join::new(server))));
+        try!(conn.send(Broadcast::new(Join::new(server))));
 
         Ok(())
     }

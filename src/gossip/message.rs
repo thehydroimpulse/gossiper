@@ -6,18 +6,9 @@ use std::io::IoError;
 
 use server::Server;
 
-#[deriving(Encodable, Decodable)]
-pub struct Message<T> {
-    msg: T
-}
+pub trait Message {}
 
-impl<'a, T: Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>> Message<T> {
-    pub fn new(msg: T) -> Message<T> {
-        Message {
-            msg: msg
-        }
-    }
-}
+impl<T> Message for T {}
 
 #[deriving(Clone, Encodable, Decodable, PartialEq, Show)]
 pub struct Join {
@@ -35,3 +26,4 @@ impl Join {
         }
     }
 }
+

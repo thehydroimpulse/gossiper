@@ -15,7 +15,8 @@ use message::Message;
 ///
 /// Each broadcast is tagged with a unique ID so that we may track
 /// which node has received a given broadcast.
-pub struct Broadcast<'a, T> {
+#[deriving(Clone, PartialEq, Encodable, Decodable)]
+pub struct Broadcast<T> {
     /// A unique id (uuidv4) representing the broadcast. This will allow us to keep
     /// track of it when dealing with many broadcasts and we receive them in
     /// different orders.
@@ -23,37 +24,16 @@ pub struct Broadcast<'a, T> {
 
     /// Request is an arbitrary type. This allows users
     /// to specify their own custom broadcasts to be sent and received.
-    request: T,
-
-    /// Each broadcast may have an **optional** response of a different
-    /// type than the request. The closure will be called once we receive
-    /// the full response.
-    ///
-    /// The closure is not guaranteed to be ran on a specific thread.
-    response: Option<|response: Box<Response>|: 'a>
+    body: T
 }
 
-impl<'a, T: Clone + Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>> Broadcast<'a, T> {
+impl<'a, T: Message + Clone + Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>> Broadcast<T> {
 
-    pub fn new(message: T) -> Broadcast<'a, T> {
+    pub fn new(message: T) -> Broadcast<T> {
         Broadcast {
             id: Uuid::new_v4(),
-            request: message,
-            response: None
+            body: message
         }
-    }
-
-    /// Add a response to the broadcast, which isn't required. Once
-    /// the response has been received, the closure will be called.
-    ///
-    /// ```rust
-    /// Broadcast::new(Message).with_response(|response| {
-    ///     // Do something with the response
-    /// });
-    /// ```
-    pub fn with_response(mut self, response: |response: Box<Response>|: 'a) -> Broadcast<'a, T> {
-        self.response = Some(response);
-        self
     }
 
     /// Send the broadcast to a given server.
@@ -72,7 +52,7 @@ impl<'a, T: Clone + Encodable<Encoder<'a>, IoError> + Decodable<Decoder, Decoder
     /// }
     /// ```
     pub fn send<A: Connection>(&self, connection: &mut A) -> GossipResult<()> {
-        connection.send(Message::new(self.request.clone()));
+        connection.send(self.clone());
         Ok(())
     }
 }
@@ -86,18 +66,6 @@ mod test {
     use std::io::net::ip::Ipv4Addr;
     use transport::Transport;
     use connection::Connection;
-
-    #[test]
-    fn has_no_response() {
-        let broadcast = Broadcast::new(123 as int);
-        assert!(broadcast.response.is_none());
-    }
-
-    #[test]
-    fn add_response() {
-        let broadcast = Broadcast::new(123 as int).with_response(|response| {});
-        assert!(broadcast.response.is_some());
-    }
 
     #[test]
     fn send_broadcast() {
