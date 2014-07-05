@@ -29,7 +29,8 @@ pub struct GossipError {
 #[deriving(Show)]
 pub enum GossipErrorKind {
     IoError(io::IoError),
-    DecoderError(json::DecoderError)
+    DecoderError(json::DecoderError),
+    TaggedDecodingError
 }
 
 impl GossipError {

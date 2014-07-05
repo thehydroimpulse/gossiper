@@ -40,3 +40,4 @@ pub mod response;
 pub mod version;
 pub mod health;
 pub mod tagged;
+pub mod tagged_encoding;
