@@ -1,5 +1,5 @@
 use serialize::{Encodable, Decodable};
-use serialize::json::{Encoder, Decoder, DecoderError};
+use msgpack::{Encoder, Decoder};
 use std::io::IoError;
 
 use result::GossipResult;
@@ -9,9 +9,9 @@ use broadcast::Broadcast;
 pub trait Connection {
     fn send<'a, T: Message
         + Encodable<Encoder<'a>, IoError>
-        + Decodable<Decoder, DecoderError>>(&mut self, msg: Broadcast<T>) -> GossipResult<()>;
+        + Decodable<Decoder<'a>, IoError>>(&mut self, msg: Broadcast<T>) -> GossipResult<()>;
 
     fn receive<'a, T: Message
         + Encodable<Encoder<'a>, IoError>
-        + Decodable<Decoder, DecoderError>>(&mut self) -> GossipResult<Broadcast<T>>;
+        + Decodable<Decoder<'a>, IoError>>(&mut self) -> GossipResult<Broadcast<T>>;
 }

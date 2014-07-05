@@ -8,3 +8,7 @@ authors = [ "Daniel Fagnan <dnfagnan@gmail.com>" ]
 
 name = "gossip"
 path = "src/gossip/lib.rs"
+
+[dependencies.msgpack]
+
+git = "https://github.com/thehydroimpulse/rust-msgpack"

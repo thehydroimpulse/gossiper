@@ -25,6 +25,8 @@ extern crate rand;
 extern crate serialize;
 extern crate core;
 
+extern crate msgpack;
+
 pub mod server;
 pub mod state;
 pub mod message;

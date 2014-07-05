@@ -1,7 +1,7 @@
 use std::io::{TcpListener, TcpStream, IoError};
 use std::io::net::ip::{SocketAddr, IpAddr};
-use serialize::json::{Encoder, Decoder, DecoderError};
-use serialize::json;
+use msgpack::{Encoder, Decoder};
+use msgpack::from_msgpack;
 use serialize::{Encodable, Decodable};
 
 use connection::Connection;
@@ -40,19 +40,18 @@ impl Connection for TcpConnection {
 
     fn send<'a, T: Message
             + Encodable<Encoder<'a>, IoError>
-            + Decodable<Decoder, DecoderError>> (&mut self, m: Broadcast<T>) -> GossipResult<()> {
-        let packets = Encoder::buffer_encode(&m);
+            + Decodable<Decoder<'a>, IoError>> (&mut self, m: Broadcast<T>) -> GossipResult<()> {
+        let packets = try!(Encoder::to_msgpack(&m).map_err(io_err));
         write!(self.stream,  "{}", packets.as_slice());
         Ok(())
     }
 
     fn receive<'a, T: Message
             + Encodable<Encoder<'a>, IoError>
-            + Decodable<Decoder, DecoderError>>(&mut self) -> GossipResult<Broadcast<T>> {
-        let raw = try!(self.stream.read_to_str().map_err(io_err));
-        let json_obj = json::from_str(raw.as_slice());
-        let mut decoder = json::Decoder::new(json_obj.unwrap());
-        let obj: Broadcast<T> = try!(Decodable::decode(&mut decoder).map_err(decoder_err));
+            + Decodable<Decoder<'a>, IoError>>(&mut self) -> GossipResult<Broadcast<T>> {
+        let raw = try!(self.stream.read_to_end().map_err(io_err));
+        let obj: Broadcast<T> = try!(from_msgpack(raw).map_err(io_err));
+        //let obj: Broadcast<T> = try!(Decodable::decode(&mut decoder).map_err(decoder_err));
         Ok(obj)
    }
 }

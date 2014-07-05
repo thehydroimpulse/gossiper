@@ -1,6 +1,6 @@
 use uuid::Uuid;
 use serialize::{Encodable, Decodable};
-use serialize::json::{Encoder, Decoder, DecoderError};
+use msgpack::{Encoder, Decoder};
 use std::io::IoError;
 
 use result::GossipResult;
@@ -27,7 +27,7 @@ pub struct Broadcast<T> {
     body: T
 }
 
-impl<'a, T: Message + Clone + Encodable<Encoder<'a>, IoError> + Decodable<Decoder, DecoderError>> Broadcast<T> {
+impl<'a, T: Message + Clone + Encodable<Encoder<'a>, IoError> + Decodable<Decoder<'a>, IoError>> Broadcast<T> {
 
     pub fn new(message: T) -> Broadcast<T> {
         Broadcast {
