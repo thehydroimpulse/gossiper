@@ -6,6 +6,7 @@ use std::io::IoError;
 
 use connection::Connection;
 use server::Server;
+use addr::Addr;
 
 /// A transport handles the communication between nodes. It's abstract
 /// enough to support many different implementations, such as Tcp, HTTP,
@@ -26,4 +27,6 @@ pub trait Transport {
     ///
     /// New connections may not be accepted beyond this point.
     fn close(&mut self) -> GossipResult<()>;
+
+    fn addr(&self) -> Addr;
 }

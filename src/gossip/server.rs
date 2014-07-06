@@ -10,29 +10,12 @@ use transport::Transport;
 use connection::Connection;
 use uuid::Uuid;
 use result::GossipResult;
+use addr::Addr;
 
 /// A server/node within a single gossip cluster.
-///
-/// Each server will have it's own transport service (Tcp server, for
-/// example) and each server will have a connection (TcpStream) to
-/// each other node within the cluster. Thus, each has a way for
-/// servers to communicate with them
-///
-/// A (Server, Connection:[B, C]) ----> B (Server, Connection:[A, C])
-/// ---- C (Server, Connection:[A, B])
-///
-/// If A sends a message to C, it uses it's connection to C. If C
-/// wants to send a message to B, it uses it's connection to B.
-///
-/// Each server has a list of Connections, and it has a transport to
-/// accept new connections.
-///
-/// Thus, the transport is used for accepting new connections.
-///
 pub struct Server<'a, T> {
     pub id: Uuid,
-    pub ip: &'a str,
-    pub port: u16,
+    pub addr: Addr,
     state: State,
     transport: T,
     peers: Vec<Server<'a, T>>
@@ -42,11 +25,10 @@ impl<'a, T: Transport> Server<'a, T> {
     /// Create a new server given an address (ipv4 or ipv6) and a port.
     /// This function will **not** do any connection initializations. This
     /// is handled by further methods.
-    pub fn new(ip: &'a str, port: u16, transport: T) -> GossipResult<Server<'a, T>> {
+    pub fn new(transport: T) -> GossipResult<Server<'a, T>> {
         Ok(Server {
             id: Uuid::new_v4(),
-            ip: ip,
-            port: port,
+            addr: transport.addr(),
             state: State::new(),
             transport: transport,
             peers: Vec::new()

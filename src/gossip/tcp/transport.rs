@@ -19,6 +19,7 @@ use message::{Message, Join};
 use tcp::connection::TcpConnection;
 use server::Server;
 use broadcast::Broadcast;
+use addr::Addr;
 
 /// Messages that the AcceptingManager is communicating with.
 pub enum AcceptingMsg {
@@ -28,25 +29,6 @@ pub enum AcceptingMsg {
 
 pub enum StreamMsg {
     Incoming(TcpConnection)
-}
-
-/// Wrap the common idiom of accepting a string and port into a
-/// single source that's easier to pass around. It also mitigates the
-/// naming issue of port (u16) and port (Receiver).
-#[deriving(Show, PartialEq, Clone)]
-pub struct Addr {
-    pub ip: String,
-    pub port: u16
-}
-
-impl Addr {
-    /// Create a new instance of the Addr record.
-    pub fn new(ip: String, port: u16) -> Addr {
-        Addr {
-            ip: ip,
-            port: port
-        }
-    }
 }
 
 /// Alias the type to be easier to use.
@@ -197,7 +179,7 @@ impl TcpTransport {
     /// current node.
     pub fn listen(ip: &str, port: u16) -> GossipResult<TcpTransport> {
 
-        let addr = Addr::new(ip.to_string(), port);
+        let addr = Addr::new(ip, port);
         let sender = create_accepting_task(addr.clone());
 
         let mut transport = TcpTransport {
@@ -248,6 +230,10 @@ impl Transport for TcpTransport {
         self.sender.send(Exit);
         Ok(())
     }
+
+    fn addr(&self) -> Addr {
+        self.addr.clone()
+    }
 }
 
 
@@ -260,13 +246,14 @@ mod test {
     use tcp::connection::TcpConnection;
     use connection::Connection;
     use transport::Transport;
+    use addr::Addr;
 
     static port: u16 = 6553;
     static addr: &'static str = "127.0.0.1";
 
     #[test]
     fn accepting_manager() {
-        let a = Addr::new(addr.to_string(), port);
+        let a = Addr::new(addr, port);
         let chan: AcceptingTask = create_accepting_task(a);
         let conn = TcpConnection::connect(addr, port).unwrap();
         chan.send(Exit);
