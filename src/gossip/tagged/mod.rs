@@ -2,9 +2,11 @@ use message::Message;
 
 pub mod encoding;
 
-pub trait TagType {}
-
-impl<T> TagType for T {}
+#[deriving(Show, PartialEq)]
+pub enum TagType {
+    TyString(String),
+    TyInt(int)
+}
 
 /// A tagged value represents a value we have received, but we don't know how
 /// to handle it, nor can we interpret it into an actual type. When we receive
@@ -15,14 +17,14 @@ impl<T> TagType for T {}
 /// values of the same type, they'll have the same ID and these ids can be user
 /// generated and the id can be of a variation of types (e.g., a string)
 pub struct TaggedValue {
-    id: Box<TagType>,
+    id: TagType,
     resolved: bool,
     bytes: Vec<u8>
 }
 
 impl TaggedValue {
     /// Create a brand new tagged value given it's `id` and contents.
-    pub fn new(id: Box<TagType>, bytes: Vec<u8>) -> TaggedValue {
+    pub fn new(id: TagType, bytes: Vec<u8>) -> TaggedValue {
         TaggedValue {
             id: id,
             resolved: false,

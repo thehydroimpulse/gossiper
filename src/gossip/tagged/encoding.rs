@@ -2,7 +2,7 @@
 //! the underlying representation to something we can read without actually decoding the raw data
 //! that contains the real broadcast.
 
-use tagged::{TaggedValue, TagType};
+use tagged::{TaggedValue, TagType, TyString, TyInt};
 use result::{GossipResult, GossipError, io_err, TaggedDecodingError};
 use std::io::Reader;
 
@@ -113,7 +113,9 @@ pub fn to_tag<'a>(reader: &'a mut Reader) -> GossipResult<TaggedValue> {
     let tag = TaggedValue::new(match ty {
         // String.
         0xE3 => {
-            box try!(String::from_utf8(buf).map_err(|e| GossipError::new("Malformed utf8 string.", TaggedDecodingError))) as Box<TagType>
+            TyString(try!(String::from_utf8(buf).map_err(|e| {
+                GossipError::new("Malformed utf8 string.", TaggedDecodingError)
+            })))
         },
         _ => {
             return Err(GossipError::new("Malformed tag encoding. Expected a proper type tag.", TaggedDecodingError));
@@ -128,6 +130,7 @@ pub fn to_tag<'a>(reader: &'a mut Reader) -> GossipResult<TaggedValue> {
 mod tests {
     use super::*;
     use std::io::MemReader;
+    use tagged::{TyString};
 
     fn num_to_bytes(v: &mut Vec<u8>, num: u32) {
         v.push((num >> 24) as u8);
@@ -169,6 +172,26 @@ mod tests {
         match to_tag(&mut mem) {
             Ok(tag) => {},
             Err(err) => fail!("Error: {}", err)
+        }
+    }
+
+    #[test]
+    fn decode_string_type() {
+        let mut v = vec![0xCB, 0xE3];
+
+        num_to_bytes(&mut v, 3u32);
+        v.push(102);
+        v.push(111);
+        v.push(111);
+        num_to_bytes(&mut v, 0);
+
+        let mut mem = MemReader::new(v);
+        match to_tag(&mut mem) {
+            Ok(tag) => {
+                assert_eq!(tag.id, TyString("foo".to_string()));
+                assert_eq!(tag.bytes.len(), 0);
+            },
+            Err(err) => fail!("Err: {}", err)
         }
     }
 }
