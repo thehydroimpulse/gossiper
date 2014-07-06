@@ -194,4 +194,36 @@ mod tests {
             Err(err) => fail!("Err: {}", err)
         }
     }
+
+    #[test]
+    fn decode_bytes() {
+        let mut v = vec![0xCB, 0xE3];
+
+        num_to_bytes(&mut v, 3u32);
+        v.push(102);
+        v.push(111);
+        v.push(111);
+        num_to_bytes(&mut v, 5u32);
+        v.push(102);
+        v.push(111);
+        v.push(111);
+        v.push(111);
+        v.push(111);
+
+        let mut mem = MemReader::new(v);
+        match to_tag(&mut mem) {
+            Ok(tag) => {
+                assert_eq!(tag.bytes.len(), 5);
+                assert_eq!(tag.bytes.get(0), &102u8);
+                assert_eq!(tag.bytes.get(1), &111u8);
+                assert_eq!(tag.bytes.get(2), &111u8);
+                assert_eq!(tag.bytes.get(3), &111u8);
+                assert_eq!(tag.bytes.get(4), &111u8);
+
+                let v = String::from_utf8(tag.bytes).unwrap();
+                assert_eq!(v.as_slice(), "foooo");
+            },
+            Err(err) => fail!("Err: {}", err)
+        }
+    }
 }
