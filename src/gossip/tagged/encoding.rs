@@ -103,7 +103,9 @@ pub fn to_tag<'a>(reader: &'a mut Reader) -> GossipResult<TaggedValue> {
 
     // Get the length of the tag type.
     let length = try!(reader.read_be_u32().map_err(io_err));
+    println!("length: {}", length);
     let buf    = try!(reader.read_exact(length as uint).map_err(io_err));
+
 
     let bytes_length = try!(reader.read_be_u32().map_err(io_err));
     let mut bytes = try!(reader.read_exact(bytes_length as uint).map_err(io_err));
@@ -114,9 +116,59 @@ pub fn to_tag<'a>(reader: &'a mut Reader) -> GossipResult<TaggedValue> {
             box try!(String::from_utf8(buf).map_err(|e| GossipError::new("Malformed utf8 string.", TaggedDecodingError))) as Box<TagType>
         },
         _ => {
-            box 0i as Box<TagType>
+            return Err(GossipError::new("Malformed tag encoding. Expected a proper type tag.", TaggedDecodingError));
         }
     }, bytes);
 
     Ok(tag)
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::MemReader;
+
+    fn num_to_bytes(v: &mut Vec<u8>, num: u32) {
+        v.push((num >> 24) as u8);
+        v.push((num >> 16) as u8);
+        v.push((num >> 8) as u8);
+        v.push((num >> 0) as u8);
+    }
+
+    #[test]
+    fn invalid_encoding_byte() {
+        let mut mem = MemReader::new(vec![0u8]);
+        match to_tag(&mut mem) {
+            Ok(tag) => fail!("Expected a failure case."),
+            Err(_) => {}
+        }
+    }
+
+    #[test]
+    fn invalid_tag_type() {
+        let mut mem = MemReader::new(vec![0xCB]);
+        match to_tag(&mut mem) {
+            Ok(tag) => fail!("Expected to fail because of an invalid tag type."),
+            Err(_) => {}
+        }
+    }
+
+    #[test]
+    fn should_have_length() {
+        let l: u32 = 3;
+        let mut v = vec![0xCB, 0xE3];
+
+        num_to_bytes(&mut v, l);
+        v.push(102);
+        v.push(111);
+        v.push(111);
+        num_to_bytes(&mut v, 0);
+
+        let mut mem = MemReader::new(v);
+        match to_tag(&mut mem) {
+            Ok(tag) => {},
+            Err(err) => fail!("Error: {}", err)
+        }
+    }
 }
