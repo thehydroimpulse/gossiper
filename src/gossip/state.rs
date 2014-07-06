@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use health::{Health, Green};
+
 #[deriving(Show)]
 pub struct State {
     // An eager set contains the peers that the current node will
@@ -35,7 +37,8 @@ pub struct State {
     // partition somewhere resulting in some nodes missing broadcasts.)
     lazy_set: HashSet<String>,
     exchanges: Vec<String>,
-    outstanding: Vec<String>
+    outstanding: Vec<String>,
+    health: Health
 }
 
 impl State {
@@ -44,7 +47,8 @@ impl State {
             eager_set: HashSet::new(),
             lazy_set: HashSet::new(),
             exchanges: Vec::new(),
-            outstanding: Vec::new()
+            outstanding: Vec::new(),
+            health: Green
         }
     }
 }

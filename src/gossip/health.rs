@@ -5,6 +5,7 @@
 /// Yello = There have been some partitions and other issues, but
 ///         at a level where the cluster can handle it.
 /// Green = Everything is in good shape.
+#[deriving(Show, PartialEq, Clone)]
 pub enum Health {
     Red,
     Yellow,
