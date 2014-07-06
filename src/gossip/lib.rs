@@ -39,3 +39,4 @@ pub mod version;
 pub mod health;
 pub mod tag;
 pub mod addr;
+pub mod encoding;

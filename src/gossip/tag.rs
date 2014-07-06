@@ -24,7 +24,7 @@
 
 use message::Message;
 use result::{GossipResult, GossipError, io_err, TaggedDecodingError};
-use std::io::Reader;
+use std::io::{Reader, MemWriter};
 
 #[deriving(Show, PartialEq)]
 pub enum TagType {
@@ -41,7 +41,7 @@ pub enum TagType {
 /// values of the same type, they'll have the same ID and these ids can be user
 /// generated and the id can be of a variation of types (e.g., a string)
 pub struct TaggedValue {
-    id: TagType,
+    pub id: TagType,
     resolved: bool,
     bytes: Vec<u8>
 }
@@ -147,6 +147,26 @@ def!(INT_PACKED_6_END 0x7C)
 def!(INT_PACKED_7_START 0x7C)
 def!(INT_PACKED_7_ZERO 0x7E)
 def!(INT_PACKED_7_END 0x80)
+
+pub fn to_bytes<'a>(ty: TagType, bytes: &'a [u8]) -> GossipResult<Vec<u8>> {
+    let mut buf = MemWriter::new();
+
+    try!(buf.write_u8(0xCB).map_err(io_err));
+
+    match ty {
+        TyString(s) => {
+            try!(buf.write_u8(0xE3).map_err(io_err));
+            try!(buf.write_be_u32(s.len() as u32).map_err(io_err));
+            try!(buf.write(s.as_slice().as_bytes()).map_err(io_err));
+        },
+        _ => {}
+    }
+
+    try!(buf.write_be_u32(bytes.len() as u32).map_err(io_err));
+    try!(buf.write(bytes).map_err(io_err));
+
+    Ok(buf.unwrap())
+}
 
 /// Decode a tagged encoding from a generic Reader into an appropriate
 /// `TaggedValue`. The tagged value won't automatically be resolved. This
@@ -287,6 +307,30 @@ mod tests {
                 assert_eq!(v.as_slice(), "foooo");
             },
             Err(err) => fail!("Err: {}", err)
+        }
+    }
+
+    #[test]
+    fn encode() {
+        match to_bytes(TyString("foo".to_string()), &[0,1,2]) {
+            Ok(bytes) => {},
+            Err(err) => fail!("Unexpected Error: {}", err)
+        }
+    }
+
+    #[test]
+    fn encode_and_decode() {
+        let b = to_bytes(TyString("foo".to_string()), &[0,1,2]).unwrap();
+        let mut mem = MemReader::new(b);
+        match to_tag(&mut mem) {
+            Ok(tag) => {
+                assert_eq!(tag.id, TyString("foo".to_string()));
+                assert_eq!(tag.bytes.len(), 3);
+                assert_eq!(tag.bytes.get(0), &0u8);
+                assert_eq!(tag.bytes.get(1), &1u8);
+                assert_eq!(tag.bytes.get(2), &2u8);
+            },
+            Err(err) => fail!("Unexpected Error: {}", err)
         }
     }
 }
