@@ -1,14 +1,30 @@
-//! We wrap all messages in something called a tagged encoding. This encoding wraps over
-//! the underlying representation to something we can read without actually decoding the raw data
-//! that contains the real broadcast.
+//! We wrap all messages in something called a tagged encoding. This encoding
+//! wraps over the underlying representation to something we can read without
+//! actually decoding the raw data that contains the real broadcast.
+//!
+//! ## Format
+//!
+//! -------------------
+//! | position | size | field
+//! ===================
+//! |     0    | u8   | Encoding Flag
+//! |     1    | u8   | Type of ID
+//! |     2    | u32  | Length of ID
+//! |     3    | u8[] | ID
+//! |     4    | u32  | Bytes length
+//! |     5    | u8[] | Bytes
+//! -------------------
+//!
+//! Encoding Flag: This single byte is used to identify the beginning of the
+//!                tagged encoding.
+//! Type of ID: These are defined as a bytecode. Examples of types are strings, int, etc...
+//! Bytes: This contains the real encoding that has an unknown type. Thus, we'll just pull
+//!        it out of the encoding and store it as a vector of bytes. We'll be able to resolve
+//!        this at a later stage.
 
 use tagged::{TaggedValue, TagType, TyString, TyInt};
 use result::{GossipResult, GossipError, io_err, TaggedDecodingError};
 use std::io::Reader;
-
-/// A single bytecode traditionally represented as hexadecimal. The specification has a number of
-/// default bytecodes that are defined.
-pub struct Bytecode(int);
 
 /// A macro to easily create bytecodes.
 macro_rules! def(
@@ -91,11 +107,17 @@ def!(INT_PACKED_7_START 0x7C)
 def!(INT_PACKED_7_ZERO 0x7E)
 def!(INT_PACKED_7_END 0x80)
 
+/// Decode a tagged encoding from a generic Reader into an appropriate
+/// `TaggedValue`. The tagged value won't automatically be resolved. This
+/// will be deferred to the user.
 pub fn to_tag<'a>(reader: &'a mut Reader) -> GossipResult<TaggedValue> {
 
     // Read in the first byte to check whether it's a tagged encoding.
     if try!(reader.read_byte().map_err(io_err)) != 0xCB {
-        return Err(GossipError::new("Expected the beginning marker of a tagged encoding.", TaggedDecodingError));
+        return Err(
+            GossipError::new("Expected the beginning marker of a tagged encoding.",
+                             TaggedDecodingError)
+        );
     }
 
     // Get the type of tag.
@@ -103,22 +125,23 @@ pub fn to_tag<'a>(reader: &'a mut Reader) -> GossipResult<TaggedValue> {
 
     // Get the length of the tag type.
     let length = try!(reader.read_be_u32().map_err(io_err));
-    println!("length: {}", length);
     let buf    = try!(reader.read_exact(length as uint).map_err(io_err));
 
-
     let bytes_length = try!(reader.read_be_u32().map_err(io_err));
-    let mut bytes = try!(reader.read_exact(bytes_length as uint).map_err(io_err));
+    let mut bytes    = try!(reader.read_exact(bytes_length as uint).map_err(io_err));
 
     let tag = TaggedValue::new(match ty {
-        // String.
+        // String
         0xE3 => {
             TyString(try!(String::from_utf8(buf).map_err(|e| {
                 GossipError::new("Malformed utf8 string.", TaggedDecodingError)
             })))
         },
         _ => {
-            return Err(GossipError::new("Malformed tag encoding. Expected a proper type tag.", TaggedDecodingError));
+            return Err(
+                GossipError::new("Malformed tag encoding. Expected a proper type tag.",
+                                 TaggedDecodingError)
+            );
         }
     }, bytes);
 

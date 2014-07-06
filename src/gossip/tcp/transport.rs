@@ -87,7 +87,8 @@ impl AcceptingManager {
     ///       kinda ugly, but works.
     pub fn start(&mut self) {
 
-        let mut acceptor = TcpListener::bind(self.addr.ip.as_slice(), self.addr.port).listen().unwrap();
+        let mut acceptor = TcpListener::bind(self.addr.ip.as_slice(), self.addr.port)
+            .listen().unwrap();
         acceptor.set_timeout(Some(0));
 
         loop {

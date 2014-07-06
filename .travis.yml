@@ -10,4 +10,4 @@ install:
   - rustc -v
 
 script:
-  - cargo test
+  - make test

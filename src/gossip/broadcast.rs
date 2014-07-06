@@ -27,7 +27,8 @@ pub struct Broadcast<T> {
     body: T
 }
 
-impl<'a, T: Message + Clone + Encodable<Encoder<'a>, IoError> + Decodable<Decoder<'a>, IoError>> Broadcast<T> {
+impl<'a, T: Message + Clone + Encodable<Encoder<'a>, IoError>
+           + Decodable<Decoder<'a>, IoError>> Broadcast<T> {
 
     pub fn new(message: T) -> Broadcast<T> {
         Broadcast {

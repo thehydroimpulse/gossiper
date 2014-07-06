@@ -1,21 +1,19 @@
 RUSTC ?= rustc
 RUSTC_FLAGS ?=
+CARGO ?= cargo
 
 SRC = $(shell find src -name '*.rs')
 
 all: libgossip
 
 libgossip: $(SRC)
-	mkdir -p target
-	$(RUSTC) --out-dir target src/gossip/lib.rs
+	$(CARGO) build
 
 test: $(SRC)
-	mkdir -p target
-	$(RUSTC) --test --out-dir target src/gossip/lib.rs
-	./target/gossip
+	sh ./test/check-style.sh
+	$(CARGO) test
 
 clean:
 	@rm -rf target
-
 
 .PHONY: clean
