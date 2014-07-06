@@ -25,14 +25,14 @@ impl<'a, T: Transport> Server<'a, T> {
     /// Create a new server given an address (ipv4 or ipv6) and a port.
     /// This function will **not** do any connection initializations. This
     /// is handled by further methods.
-    pub fn new(transport: T) -> GossipResult<Server<'a, T>> {
-        Ok(Server {
+    pub fn new(transport: T) -> Server<'a, T> {
+        Server {
             id: Uuid::new_v4(),
             addr: transport.addr(),
             state: State::new(),
             transport: transport,
             peers: Vec::new()
-        })
+        }
     }
 
     // Try and join a specific cluster given a peer node.
@@ -54,7 +54,7 @@ mod test {
     #[test]
     fn new_server() {
         let tcp = TcpTransport::listen("127.0.0.1", 5666).unwrap();
-        let server = Server::new(tcp).unwrap();
+        let server = Server::new(tcp);
 
         assert_eq!(server.addr.ip.as_slice(), "127.0.0.1");
         assert_eq!(server.addr.port, 5666);
@@ -63,7 +63,7 @@ mod test {
     #[test]
     fn empty_peers() {
         let tcp = TcpTransport::listen("127.0.0.1", 5665).unwrap();
-        let server = Server::new(tcp).unwrap();
+        let server = Server::new(tcp);
 
         assert_eq!(server.peers.len(), 0);
     }
