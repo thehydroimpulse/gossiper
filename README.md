@@ -4,6 +4,22 @@
 
 Gossip protocol written in Rust.
 
+## Installing Gossip
+
+Gossip is a Cargo package. You can simply include Gossip as a dependency.
+
+```toml
+# Cargo.toml
+[project]
+
+name = "foobar"
+version = "0.0.1"
+authors = []
+
+[dependencies.gossip]
+git = "https://github.com/thehydroimpulse/gossip.rs"
+```
+
 ## What's A Gossip Protocol?
 
 Wikipedia defines it as:
@@ -30,21 +46,6 @@ Rust is also more in-line to Erlang in terms of error handling. Each task is com
 
 ## Getting Started
 
-## Building Gossip.rs
-
-```
-cargo build
-```
-
-## Installing Gossip
-
-Gossip is a Cargo package. You can simply include Gossip as a dependency.
-
-```toml
-# Cargo.toml
-[dependencies.gossip]
-git = "https://github.com/thehydroimpulse/gossip.rs"
-```
 
 ## Use Cases
 
@@ -79,15 +80,15 @@ Notable/Inspired implementations:
 
 ## Testing
 
-Testing is extremely important for a distributed systems. We need to ensure that the applied trade-offs are appropriate and accurate as well as the overall design is *correct*.
+```
+make test
+```
 
-There are numerous different testing methods used(/going to be used):
+## Building Gossip.rs
 
-* Unit tests: Ensures correctness at the API/atomic level. These are fully isolated tests to ensure
-              that they work as intended.
-* Simulation tests (acceptance tests): These test the system as a whole.
-* [Jepsen](https://github.com/aphyr/jepsen): These might replace the current simulation tests.
-
+```
+cargo build
+```
 
 ## License
 
