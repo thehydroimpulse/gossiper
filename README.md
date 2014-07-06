@@ -1,4 +1,4 @@
-[!<img src="../master/logo.png?raw=true" width="450" />](https://github.com/thehydroimpulse/gossip.rs)
+[<img src="../master/logo.png?raw=true" width="450" />](https://github.com/thehydroimpulse/gossip.rs)
 
 [![Build Status](https://travis-ci.org/thehydroimpulse/gossip.rs.svg?branch=master)](https://travis-ci.org/thehydroimpulse/gossip.rs) [![Stories in Ready](https://badge.waffle.io/thehydroimpulse/gossip.rs.png?label=ready&title=Ready)](https://waffle.io/thehydroimpulse/gossip.rs)
 
@@ -48,6 +48,46 @@ Rust is also more in-line to Erlang in terms of error handling. Each task is com
 
 ## Getting Started
 
+After adding Gossip as a dependency, you'll want to include the crate within your project:
+
+```rust
+extern crate gossip;
+```
+
+Now you'll have access to the Gossip system.
+
+### Creating a Server
+
+A server is the most atomic piece in a cluster. Each server (/peer/node) is an equal member of a cluster. Each server will need to provide a transport object (we'll be using the TCP transport).
+
+```rust
+use gossip::Server;
+use gossip::tcp::TcpTransport;
+use gossip::result::GossipResult;
+
+fn initialize() -> GossipResult<()> {
+    let mut transport = try!(TcpTransport::listen("0.0.0.0", 5499));
+    let mut server = Server::new(&mut transport);
+}
+
+fn main() {
+    match initialize() {
+        Ok(_) => {},
+        Err(err) => println!("Something bad happened: {}", err)
+    }
+}
+```
+
+Now we have a single server listening on a new cluster.
+
+
+### Joining An Existing Cluster
+
+To join a cluster, you simply need the ip and port of a peer within that cluster (i.e., any current member).
+
+```rust
+server.join("10.0.0.4", 5499);
+```
 
 ## Use Cases
 
