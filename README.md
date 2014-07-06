@@ -1,4 +1,5 @@
-![Gossip.rs](../master/logo.png?raw=true)
+[!<img src="../master/logo.png?raw=true" width="450" />](https://github.com/thehydroimpulse/gossip.rs)
+
 [![Build Status](https://travis-ci.org/thehydroimpulse/gossip.rs.svg?branch=master)](https://travis-ci.org/thehydroimpulse/gossip.rs) [![Stories in Ready](https://badge.waffle.io/thehydroimpulse/gossip.rs.png?label=ready&title=Ready)](https://waffle.io/thehydroimpulse/gossip.rs)
 
 **Note**: This is a work-in-progress. It's not yet useable.
