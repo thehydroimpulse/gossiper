@@ -2,7 +2,7 @@
 //! the underlying representation to something we can read without actually decoding the raw data
 //! that contains the real broadcast.
 
-use tagged::{Tagged, TagType};
+use tagged::{TaggedValue, TagType};
 use result::{GossipResult, GossipError, io_err, TaggedDecodingError};
 use std::io::Reader;
 
@@ -91,7 +91,7 @@ def!(INT_PACKED_7_START 0x7C)
 def!(INT_PACKED_7_ZERO 0x7E)
 def!(INT_PACKED_7_END 0x80)
 
-pub fn to_tag<'a>(reader: &'a mut Reader) -> GossipResult<Tagged> {
+pub fn to_tag<'a>(reader: &'a mut Reader) -> GossipResult<TaggedValue> {
 
     // Read in the first byte to check whether it's a tagged encoding.
     if try!(reader.read_byte().map_err(io_err)) != 0xCB {
@@ -108,7 +108,7 @@ pub fn to_tag<'a>(reader: &'a mut Reader) -> GossipResult<Tagged> {
     let bytes_length = try!(reader.read_be_u32().map_err(io_err));
     let mut bytes = try!(reader.read_exact(bytes_length as uint).map_err(io_err));
 
-    let tag = Tagged::new(match ty {
+    let tag = TaggedValue::new(match ty {
         // String.
         0xE3 => {
             box try!(String::from_utf8(buf).map_err(|e| GossipError::new("Malformed utf8 string.", TaggedDecodingError))) as Box<TagType>
