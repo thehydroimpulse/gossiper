@@ -88,6 +88,38 @@ To join a cluster, you simply need the ip and port of a peer within that cluster
 server.join("10.0.0.4", 5499);
 ```
 
+### Sending A Custom Message
+
+To send a message, you simply need to implement `Encodable` and `Decodable` for it:
+
+```rust
+use serialize::{Encodable, Decodable};
+
+#[deriving(Encodable, Decodable)]
+pub struct MessageFoo {
+    age: int
+}
+```
+
+Now you can send a new broadcast:
+
+```rust
+server.broadcast(MessageFoo { age: 29 });
+```
+
+### Receiving A Message
+
+To receive a message, you simply listen onto the server's channel. Because Gossip doesn't have any information on the type of message it was (it's just a bunch of bytes on the wire), we tag it with some metadata (typically the name of the type). The user will receive this tagged message which can then be resolved.
+
+```rust
+use gossip::tag::TaggedValue;
+
+// Block until we receive a message.
+match server.receive() {
+    TaggedValue { }
+}
+```
+
 ## Use Cases
 
 Because this is an agnostic gossip protocol (i.e., it can be used for any system built on-top of it.), we can't make certain guarantees that some systems make.
