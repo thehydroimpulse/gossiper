@@ -64,7 +64,7 @@ A server is the most atomic piece in a cluster. Each server (/peer/node) is an e
 extern crate serialize;
 extern crate gossip;
 
-use gossip::{Server, SendMessage};
+use gossip::{Server, Message};
 
 use serialize::{Encodable, Decodable};
 
@@ -75,19 +75,27 @@ struct Commit {
 }
 
 fn main() {
+    // Create an in-memory array for our "commits".
     let mut commits = Vec::new();
+
+    // Create a mostly-default server using the in-memory
+    // transport.
     let mut node = Server::new("0.0.0.0", 5666);
-    let (tx, rx) = node.channel();
 
-    spawn(proc() {
-        // Join an existing cluster.
-        node.join("10.0.0.1", 5666);
-    });
+    // Join an existing cluster. This will go and spawn a separate task
+    // for the core gossip protocol, which will create tasks for new connections
+    // and such.
+    node.join("10.0.0.1", 5666);
 
-    match rx.recv() {
-        SendMessage("commit", broadcast) => {
+    match node.recv() {
+        // The first value (String) is the tag and the second is the actual broadcast.
+        // A tag allows us to appropriately match a message.
+        Message("commit", broadcast) => {
             let commit: Commit = broadcast.decode();
             commits.push(commit);
+        },
+        Message("doom", broadcast) => {
+            node.send("commit", Commit { key: "Doom", value: vec![0, 1, 0, 1, 0, 1]});
         }
     }
 }
