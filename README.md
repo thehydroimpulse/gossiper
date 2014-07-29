@@ -56,10 +56,11 @@ extern crate gossip;
 
 Now you'll have access to the Gossip system.
 
-### Creating a Server
+### Diving into an example
 
-A server is the most atomic piece in a cluster. Each server (/peer/node) is an equal member of a cluster. We'll be using
-the default in-memory transport.
+Let's get started with the Gossip library. We'll start off by creating a `Commit` record having a key and value. This will show you how to use custom types as broadcasts/messages.
+
+The first step is to create a new server with an address and port. We'll then join an existing cluster through an existing membership and start receiving messages. We can easily pattern match on incoming messages and we can also send new ones.
 
 ```rust
 extern crate serialize;
@@ -112,58 +113,6 @@ To join a cluster, you simply need the ip and port of a peer within that cluster
 ```rust
 server.join("10.0.0.4", 5499);
 ```
-
-### Sending A Custom Message
-
-To send a message, you simply need to implement `Encodable` and `Decodable` for it:
-
-```rust
-use serialize::{Encodable, Decodable};
-
-#[deriving(Encodable, Decodable)]
-pub struct MessageFoo {
-    age: int
-}
-```
-
-Now you can send a new broadcast:
-
-```rust
-server.broadcast(MessageFoo { age: 29 });
-```
-
-### Receiving A Message
-
-To receive a message, you simply listen onto the server's channel. Because Gossip doesn't have any information on the type of message it was (it's just a bunch of bytes on the wire), we tag it with some metadata (typically the name of the type). The user will receive this tagged message which can then be resolved.
-
-```rust
-use gossip::tag::TaggedValue;
-
-// Block until we receive a message.
-match server.receive() {
-    TaggedValue { }
-}
-```
-
-## Use Cases
-
-Because this is an agnostic gossip protocol (i.e., it can be used for any system built on-top of it.), we can't make certain guarantees that some systems make.
-
-In the original Plumtree paper, it does simulations around 10,000+ node clusters in a P2P system. Because of the large number of peers, the cluster can't be fully connected (i.e., nodes don't have the possibility to communicate with every other node in the cluster.). Thus, it's partially connected; each node has the ability to communicate with a small subset of every other node.
-
-However, when dealing with, say database clusters, you'll never really have 10,000+ nodes in a single cluster. A more realistic number might be a few hundred, maybe a little more. That allows a cluster to be fully connected (i.e., each node may talk to every other node.).
-
-This library will focus on the second use-case for now (having a smaller number of nodes.) but could expand to having the ability to have a partially connected cluster.
-
-
-## Other Implementations
-
-Most gossip protocols are bundled up with the system implementation. For example, Cassandra has it's own implementation of a gossip protocol that's tied up with the whole implementation of Cassandra.
-
-Notable/Inspired implementations:
-
-* Cassandra
-* Riak
 
 ## Papers / Research
 
