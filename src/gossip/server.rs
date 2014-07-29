@@ -16,7 +16,7 @@ pub enum Health {
 }
 
 #[deriving(Show, PartialEq)]
-enum ServerMsg {
+pub enum ServerMsg {
     /// Receive a particular broadcast. We will commit it in our log that can persist to disk.
     Message(Broadcast),
     /// A signal to kill the current server. This will send a IAmShuttingDown message as

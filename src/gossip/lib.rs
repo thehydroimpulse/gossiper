@@ -25,7 +25,7 @@ extern crate core;
 
 extern crate msgpack;
 
-pub use server::Server;
+pub use server::{Server, Message};
 pub use result::{GossipResult, GossipError};
 pub use addr::Addr;
 
