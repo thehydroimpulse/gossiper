@@ -25,7 +25,11 @@ extern crate core;
 
 extern crate msgpack;
 
-pub mod broadcast;
+pub use server::Server;
+pub use result::{GossipResult, GossipError};
+pub use addr::Addr;
+
 pub mod result;
 pub mod addr;
-pub mod server;
+mod broadcast;
+mod server;

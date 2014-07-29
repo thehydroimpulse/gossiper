@@ -61,19 +61,35 @@ Now you'll have access to the Gossip system.
 A server is the most atomic piece in a cluster. Each server (/peer/node) is an equal member of a cluster. Each server will need to provide a transport object (we'll be using the TCP transport).
 
 ```rust
-use gossip::server::Server;
-use gossip::tcp::transport::TcpTransport;
+extern crate serialize;
+extern crate gossip;
 
-/// Initialize the gossip server.
-fn initialize() {
-    let mut transport = TcpTransport::new("0.0.0.0", 5499);
-    let mut server = Server::new(transport);
+use gossip::{Server, SendMessage};
 
-    server.listen();
+use serialize::{Encodable, Decodable};
+
+#[deriving(Encodable, Decodable)]
+struct Commit {
+    key: String,
+    value: Vec<u8>
 }
 
 fn main() {
-    initialize();
+    let mut commits = Vec::new();
+    let mut node = Server::new("0.0.0.0", 5666);
+    let (tx, rx) = node.channel();
+
+    spawn(proc() {
+        // Join an existing cluster.
+        node.join("10.0.0.1", 5666);
+    });
+
+    match rx.recv() {
+        SendMessage("commit", broadcast) => {
+            let commit: Commit = broadcast.decode();
+            commits.push(commit);
+        }
+    }
 }
 ```
 
