@@ -1,70 +1,73 @@
-//! The server is the top-level API that one uses.
+//! Server implementation.
 
-use std::io::net::ip::IpAddr;
-use std::io::net::ip::SocketAddr;
-use std::io::{TcpListener, TcpStream, Listener, Acceptor, IoResult};
-use std::io::net::tcp::TcpAcceptor;
-
-use state::State;
-use transport::Transport;
-use connection::Connection;
+use std::collections::hashmap::HashSet;
+use std::comm::Receiver;
+use std::rc::{Rc, Weak};
 use uuid::Uuid;
-use result::GossipResult;
+
 use addr::Addr;
+use broadcast::Broadcast;
 
-/// A server/node within a single gossip cluster.
-pub struct Server<'a, T> {
-    pub id: Uuid,
-    pub addr: Addr,
+#[deriving(Show, PartialEq)]
+pub enum Health {
+    Green,
+    Yellow,
+    Red
+}
+
+#[deriving(PartialEq)]
+struct State {
+    eager: HashSet<InternalServer>,
+    lazy: HashSet<InternalServer>,
+    health: Health,
+    broadcasts: Vec<Broadcast>,
+    graph: Graph
+}
+
+/// The graph representation of our communication model. The most ideal representation
+/// would be a spanning tree, however, that's not always possible because of the
+/// highly-available properties of our distributed system. A spanning tree would essentially
+/// prove to be the most minimal set of communication points possible to achieve
+/// the successful distribution of our broadcasts.
+///
+/// We'll have to periodically compute if the graph is a spanning tree or not.
+#[deriving(PartialEq)]
+pub struct Graph {
+    /// We group the graph by vertices so we can easily fetch all the edges of a
+    /// particular vertex.
+    vertices: HashSet<Vertex>,
+    /// Is the tree in spanning mode? This should ensure that we are
+    /// in an optimized-mode.
+    spanning: bool
+}
+
+#[deriving(Eq, PartialEq, Hash)]
+pub struct Vertex {
+    server: InternalServer,
+    edges: Vec<Rc<Vertex>>
+}
+
+#[deriving(Show, PartialEq)]
+enum ServerMsg {
+    /// Receive a particular broadcast. We will commit it in our log that can persist to disk.
+    Message(Broadcast),
+    /// A signal to kill the current server. This will send a IAmShuttingDown message as
+    /// a gossip message to let the cluster know why it's shutting down.
+    Shutdown,
+    /// Kill a specific node in the cluster. This is a state change rather than a gossip. This will
+    /// remove a specific node from the cluster.
+    KillNode(InternalServer)
+}
+
+pub struct Server {
+    addr: Addr,
     state: State,
-    transport: T,
-    peers: Vec<Server<'a, T>>
+    servers: Vec<InternalServer>,
+    receiver: Receiver<ServerMsg>
 }
 
-impl<'a, T: Transport> Server<'a, T> {
-    /// Create a new server given an address (ipv4 or ipv6) and a port.
-    /// This function will **not** do any connection initializations. This
-    /// is handled by further methods.
-    pub fn new(transport: T) -> Server<'a, T> {
-        Server {
-            id: Uuid::new_v4(),
-            addr: transport.addr(),
-            state: State::new(),
-            transport: transport,
-            peers: Vec::new()
-        }
-    }
-
-    // Try and join a specific cluster given a peer node.
-    pub fn join(&mut self, ip: &str, port: u16) -> GossipResult<()> {
-        try!(self.transport.join(ip, port, &*self))
-        Ok(())
-    }
-}
-
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use std::io::net::ip::Ipv4Addr;
-    use std::io::net::tcp::TcpStream;
-    use tcp::transport::TcpTransport;
-    use transport::Transport;
-
-    #[test]
-    fn new_server() {
-        let tcp = TcpTransport::listen("127.0.0.1", 5666).unwrap();
-        let server = Server::new(tcp);
-
-        assert_eq!(server.addr.ip.as_slice(), "127.0.0.1");
-        assert_eq!(server.addr.port, 5666);
-    }
-
-    #[test]
-    fn empty_peers() {
-        let tcp = TcpTransport::listen("127.0.0.1", 5665).unwrap();
-        let server = Server::new(tcp);
-
-        assert_eq!(server.peers.len(), 0);
-    }
+#[deriving(Show, Eq, PartialEq, Hash)]
+pub struct InternalServer {
+    id: Uuid,
+    addr: Addr
 }

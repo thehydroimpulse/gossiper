@@ -1,4 +1,3 @@
-#![crate_id = "gossip"]
 #![crate_type = "lib"]
 #![feature(globs, macro_rules, unsafe_destructor)]
 #![allow(unused_must_use,dead_code, unused_imports, unused_variable)]
@@ -26,17 +25,7 @@ extern crate core;
 
 extern crate msgpack;
 
-pub mod server;
-pub mod state;
-pub mod message;
 pub mod broadcast;
-pub mod transport;
-pub mod tcp;
-pub mod connection;
 pub mod result;
-pub mod response;
-pub mod version;
-pub mod health;
-pub mod tag;
 pub mod addr;
-pub mod encoding;
+pub mod server;

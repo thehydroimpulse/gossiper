@@ -1,6 +1,5 @@
-use serialize::{Encodable, Decodable};
 
-#[deriving(Show, Clone, PartialEq, Encodable, Decodable)]
+#[deriving(Show, Clone, Eq, PartialEq, Hash)]
 pub struct Addr {
     pub ip: String,
     pub port: u16
