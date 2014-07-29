@@ -58,7 +58,8 @@ Now you'll have access to the Gossip system.
 
 ### Creating a Server
 
-A server is the most atomic piece in a cluster. Each server (/peer/node) is an equal member of a cluster. Each server will need to provide a transport object (we'll be using the TCP transport).
+A server is the most atomic piece in a cluster. Each server (/peer/node) is an equal member of a cluster. We'll be using
+the default in-memory transport.
 
 ```rust
 extern crate serialize;
