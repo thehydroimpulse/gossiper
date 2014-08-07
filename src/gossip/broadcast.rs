@@ -1,8 +1,10 @@
+//! A broadcast represents a single message being sent out.
+
 use uuid::Uuid;
 use std::collections::hashmap::HashSet;
 
 use result::GossipResult;
-use server::{Server, InternalServer};
+use server::{Server, Node};
 
 /// Broadcast represents a single bi-directional communication with two
 /// nodes within the cluster. The communication does **not** need to be
@@ -21,7 +23,7 @@ pub struct Broadcast {
     /// The raw bytes of the message.
     message: Vec<u8>,
     /// A set of servers that have seen/committed the broadcast.
-    committed: HashSet<InternalServer>
+    committed: HashSet<Node>
 }
 
 impl Broadcast {

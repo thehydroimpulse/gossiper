@@ -1,6 +1,7 @@
+//! Custom Result and Error types.
+
 use std::io;
 use std::str::SendStr;
-use serialize::json;
 
 pub type GossipResult<T> = Result<T, GossipError>;
 
@@ -9,13 +10,6 @@ pub fn io_err(io: io::IoError) -> GossipError {
     GossipError {
         kind: IoError(io.clone()),
         desc: io.desc.into_maybe_owned()
-    }
-}
-
-pub fn decoder_err(err: json::DecoderError) -> GossipError {
-    GossipError {
-        kind: DecoderError(err.clone()),
-        desc: "DecoderError".into_maybe_owned()
     }
 }
 
@@ -28,9 +22,7 @@ pub struct GossipError {
 
 #[deriving(Show)]
 pub enum GossipErrorKind {
-    IoError(io::IoError),
-    DecoderError(json::DecoderError),
-    TaggedDecodingError
+    IoError(io::IoError)
 }
 
 impl GossipError {
