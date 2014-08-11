@@ -112,8 +112,7 @@ pub struct Server {
     receiver: Receiver<ServerMsg>,
     /// Used to send to the previous receiver. This is meant to be copied to various tasks
     /// that need it.
-    sender: Sender<ServerMsg>,
-    manager: ServerTaskManager
+    sender: Sender<ServerMsg>
 }
 
 impl Server {
@@ -130,30 +129,10 @@ impl Server {
             state: State::new(),
             servers: Vec::new(),
             receiver: rx,
-            sender: tx,
-            manager: ServerTaskManager::new()
+            sender: tx
         };
 
         server
-    }
-}
-
-pub struct ServerTaskManager {
-    rx: Receiver<ServerMsg>,
-    tx: Sender<ServerMsg>
-}
-
-impl ServerTaskManager {
-    pub fn new() -> ServerTaskManager {
-        let (tx, rx) = channel();
-
-        let manager = ServerTaskManager { rx: rx, tx: tx };
-
-        spawn(proc() {
-            manager.start();
-        });
-
-        rx.recv()
     }
 }
 

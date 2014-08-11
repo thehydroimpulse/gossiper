@@ -1,6 +1,6 @@
 #![crate_type = "lib"]
 #![feature(globs, macro_rules, unsafe_destructor)]
-#![deny(missing_doc)]
+#![allow(missing_doc)]
 
 //! Gossip.rs is a gossip/epidemic protocol based on the
 //! paper "Epidemic Broadcast Trees" in which it introduced

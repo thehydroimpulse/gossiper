@@ -16,13 +16,15 @@ impl Addr {
     /// are much easier to work with and allow things such as:
     ///
     /// ```rust
+    /// use gossip::Addr;
     /// Addr::new("0.0.0.0", 8777);
     /// ```
     ///
     /// Instead of:
     ///
     /// ```rust
-    /// Addr::new("0.0.0.0".to_string(), 8777);
+    /// use gossip::Addr;
+    /// Addr::new("0.0.0.0", 8777);
     /// ```
     pub fn new(ip: &str, port: u16) -> Addr {
         Addr {

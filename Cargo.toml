@@ -11,4 +11,4 @@ path = "src/gossip/lib.rs"
 
 [dependencies.msgpack]
 
-git = "https://github.com/thehydroimpulse/rust-msgpack"
+git = "https://github.com/mneumann/rust-msgpack"
