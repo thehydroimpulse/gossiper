@@ -1,6 +1,6 @@
 #![crate_type = "lib"]
-#![feature(globs, macro_rules, unsafe_destructor)]
-#![deny(missing_doc)]
+#![feature(globs, macro_rules, unsafe_destructor, plugin_registrar)]
+#![allow(missing_doc)]
 
 //! Gossip.rs is a gossip/epidemic protocol based on the
 //! paper "Epidemic Broadcast Trees" in which it introduced
@@ -31,5 +31,6 @@ pub use addr::Addr;
 
 pub mod result;
 pub mod addr;
+pub mod tag;
 mod broadcast;
 mod server;
