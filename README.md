@@ -63,14 +63,19 @@ Let's get started with the Gossip library. We'll start off by creating a `Commit
 The first step is to create a new server with an address and port. We'll then join an existing cluster through an existing membership and start receiving messages. We can easily pattern match on incoming messages and we can also send new ones.
 
 ```rust
+#![feature(plugin, phase)]
+
 extern crate serialize;
 extern crate gossip;
 
-use gossip::{Server, Message};
+#[phase(plugin, link)]
+extern crate gossip_tag;
 
 use serialize::{Encodable, Decodable};
+use gossip::{Server, Message};
 
 #[deriving(Encodable, Decodable)]
+#[tag]
 struct Commit {
     key: String,
     value: Vec<u8>
@@ -92,12 +97,12 @@ fn main() {
     match node.recv() {
         // The first value (String) is the tag and the second is the actual broadcast.
         // A tag allows us to appropriately match a message.
-        Message("commit", broadcast) => {
+        Message("Commit", broadcast) => {
             let commit: Commit = broadcast.decode();
             commits.push(commit);
         },
-        Message("doom", broadcast) => {
-            node.send("commit", Commit { key: "Doom", value: vec![0, 1, 0, 1, 0, 1]});
+        Message("Doom", broadcast) => {
+            node.send(Commit { key: "Doom", value: vec![0, 1, 0, 1, 0, 1]});
         }
     }
 }
