@@ -12,7 +12,7 @@ use server::{Server, Node};
 ///
 /// Each broadcast is tagged with a unique ID so that we may track
 /// which node has received a given broadcast.
-#[deriving(Show, PartialEq)]
+#[deriving(Show, PartialEq, Clone)]
 pub struct Broadcast {
     /// A unique id for the broadcast. This allows the servers
     /// to talk about a unique broadcast in unison.

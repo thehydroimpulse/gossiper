@@ -1,5 +1,5 @@
 #![crate_type = "lib"]
-#![feature(globs, macro_rules, unsafe_destructor, plugin_registrar)]
+#![feature(globs, macro_rules, unsafe_destructor, plugin_registrar, struct_inherit)]
 #![allow(missing_doc)]
 
 //! Gossip.rs is a gossip/epidemic protocol based on the

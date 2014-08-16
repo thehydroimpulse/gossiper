@@ -63,70 +63,29 @@ Let's get started with the Gossip library. We'll start off by creating a `Commit
 The first step is to create a new server with an address and port. We'll then join an existing cluster through an existing membership and start receiving messages. We can easily pattern match on incoming messages and we can also send new ones.
 
 ```rust
-#![feature(plugin, phase)]
-
-extern crate serialize;
-extern crate gossip;
-
-#[phase(plugin, link)]
-extern crate gossip_tag;
-
-use serialize::{Encodable, Decodable};
-use gossip::{Server, Message};
-
-#[tag]
-#[deriving(Encodable, Decodable)]
-struct Commit {
-    key: String,
-    value: Vec<u8>
-}
+use gossip::Server;
 
 fn main() {
-    // Create an in-memory array for our "commits".
-    let mut commits = Vec::new();
+    // Create a local channel to communicate with.
+    let (tx, rx) = channel();
 
-    // Create a mostly-default server using the in-memory
-    // transport.
-    let mut node = Server::new("0.0.0.0", 5666);
+    // Spawn a separate task for the server.
+    spawn(proc() {
+        // Create a new server with the new channel:
+        let mut server = Server::new(tx);
 
-    // Join an existing cluster. This will go and spawn a separate task
-    // for the core gossip protocol, which will create tasks for new connections
-    // and such.
-    node.join("10.0.0.1", 5666);
+        // Bind the server to a given address:
+        server.listen("127.0.0.1", 7888).unwrap();
 
-    match node.recv() {
-        // The first value (String) is the tag and the second is the actual broadcast.
-        // A tag allows us to appropriately match a message.
-        Message("Commit", broadcast) => {
-            let commit: Commit = broadcast.decode();
-            commits.push(commit);
-        },
-        Message("Doom", broadcast) => {
-            node.send(Commit { key: "Doom", value: vec![0, 1, 0, 1, 0, 1]});
-        }
-    }
+        // Shutdown the server, we don't have anything to do yet.
+        server.close();
+    });
+
+    // Wait for new messages. This will block the main task until the
+    // server has been shutdown.
+    rx.recv();
 }
 ```
-
-Now we have a single server listening on a new cluster.
-
-
-### Joining An Existing Cluster
-
-To join a cluster, you simply need the ip and port of a peer within that cluster (i.e., any current member).
-
-```rust
-server.join("10.0.0.4", 5499);
-```
-
-### Protocol
-
-We'll go through the general gossip protocol in detail to see how the system works. Gossip starts with creating a new server, which in turn creates a new, empty cluster.So you'll always start a cluster by spinning a new peer node that will act as a seed. Further server instances being spun up will join the seed's cluster. However, even communicating to nodes is a complex task, so let's dive into the flow of establishing communication with a seed server, imagining that we're operating (or going to operate) a 2-node cluster. We'll also assume we're using TCP for the communication protocol.
-
-1. Start seed server (A) and start listening.
-2. Start server B and ask it to join the seed server's cluster.
-
-The process is now on establishing a TCP connection to both servers. It's always the server wanting to join that initiates the connection, thus, acts as the client. The seed server will always act as the server in this situation. Once a connection has been established, the client will send a `Join` message/broadcast that lets the seed server know that, yes, we want to join to existing cluster. This will add server B to the cluster and subsequently send out a new broadcast letting the rest of the cluster know about the new member. Now, say we have a 3-node cluster, and server C is already a member within the cluster, server A &mdash; the seed node &mdash; will broadcast the new membership to server C. Server C will now try to establish a connection with the new member, server B, acting as the client of the connection.
 
 ## Papers / Research
 
