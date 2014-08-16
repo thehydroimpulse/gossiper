@@ -74,8 +74,8 @@ extern crate gossip_tag;
 use serialize::{Encodable, Decodable};
 use gossip::{Server, Message};
 
-#[deriving(Encodable, Decodable)]
 #[tag]
+#[deriving(Encodable, Decodable)]
 struct Commit {
     key: String,
     value: Vec<u8>
@@ -118,6 +118,15 @@ To join a cluster, you simply need the ip and port of a peer within that cluster
 ```rust
 server.join("10.0.0.4", 5499);
 ```
+
+### Protocol
+
+We'll go through the general gossip protocol in detail to see how the system works. Gossip starts with creating a new server, which in turn creates a new, empty cluster.So you'll always start a cluster by spinning a new peer node that will act as a seed. Further server instances being spun up will join the seed's cluster. However, even communicating to nodes is a complex task, so let's dive into the flow of establishing communication with a seed server, imagining that we're operating (or going to operate) a 2-node cluster. We'll also assume we're using TCP for the communication protocol.
+
+1. Start seed server (A) and start listening.
+2. Start server B and ask it to join the seed server's cluster.
+
+The process is now on establishing a TCP connection to both servers. It's always the server wanting to join that initiates the connection, thus, acts as the client. The seed server will always act as the server in this situation. Once a connection has been established, the client will send a `Join` message/broadcast that lets the seed server know that, yes, we want to join to existing cluster. This will add server B to the cluster and subsequently send out a new broadcast letting the rest of the cluster know about the new member. Now, say we have a 3-node cluster, and server C is already a member within the cluster, server A &mdash; the seed node &mdash; will broadcast the new membership to server C. Server C will now try to establish a connection with the new member, server B, acting as the client of the connection.
 
 ## Papers / Research
 
