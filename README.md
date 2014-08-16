@@ -12,14 +12,49 @@ Gossip is a Cargo package. You can simply include Gossip as a dependency.
 
 ```toml
 # Cargo.toml
-[project]
-
-name = "foobar"
-version = "0.0.1"
-authors = []
-
 [dependencies.gossip]
 git = "https://github.com/thehydroimpulse/gossip.rs"
+```
+
+## Getting Started
+
+After adding Gossip as a dependency, you'll want to include the crate within your project:
+
+```rust
+extern crate gossip;
+```
+
+Now you'll have access to the Gossip system. We'll simply start with a brief example
+of creating a single server that listens on a given address. By default, this actually
+doesn't include any transport mechanism, so it's purely in-memory. A TCP transport
+is shipped with Gossip which we'll get to later on.
+
+```rust
+use gossip::Server;
+
+fn main() {
+    // Create a local channel to communicate with. This will allow us
+    // to communicate with the server in another task. The sender (tx)
+    // is sent to the server's task, while the receiver (rx) is ours
+    // to keep.
+    let (tx, rx) = channel();
+
+    // Spawn a separate task for the server.
+    spawn(proc() {
+        // Create a new server with the new channel:
+        let mut server = Server::new(tx);
+
+        // Bind the server to a given address:
+        server.listen("127.0.0.1", 7888).unwrap();
+
+        // Shutdown the server, we don't have anything to do yet.
+        server.close();
+    });
+
+    // Wait for new messages. This will block the main task until the
+    // server has been shutdown.
+    rx.recv();
+}
 ```
 
 ## What's A Gossip Protocol?
@@ -45,47 +80,6 @@ I believe Rust is perfect for distributed systems which are highly performant an
 Rust, on the other hand, doesn't have this limitation. It ships with a single API for managing tasks (akin to threads), but, it has two separate implementations: green and native. This allows someone to build systems without picking either of them. The user gets to pick based on which crate they bundle.
 
 Rust is also more in-line to Erlang in terms of error handling. Each task is completely isolated and can be killed, then restarted.
-
-## Getting Started
-
-After adding Gossip as a dependency, you'll want to include the crate within your project:
-
-```rust
-extern crate gossip;
-```
-
-Now you'll have access to the Gossip system.
-
-### Diving into an example
-
-Let's get started with the Gossip library. We'll start off by creating a `Commit` record having a key and value. This will show you how to use custom types as broadcasts/messages.
-
-The first step is to create a new server with an address and port. We'll then join an existing cluster through an existing membership and start receiving messages. We can easily pattern match on incoming messages and we can also send new ones.
-
-```rust
-use gossip::Server;
-
-fn main() {
-    // Create a local channel to communicate with.
-    let (tx, rx) = channel();
-
-    // Spawn a separate task for the server.
-    spawn(proc() {
-        // Create a new server with the new channel:
-        let mut server = Server::new(tx);
-
-        // Bind the server to a given address:
-        server.listen("127.0.0.1", 7888).unwrap();
-
-        // Shutdown the server, we don't have anything to do yet.
-        server.close();
-    });
-
-    // Wait for new messages. This will block the main task until the
-    // server has been shutdown.
-    rx.recv();
-}
-```
 
 ## Papers / Research
 
