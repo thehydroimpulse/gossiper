@@ -4,7 +4,8 @@ use uuid::Uuid;
 use std::collections::hashmap::HashSet;
 
 use result::GossipResult;
-use server::{Server, Node};
+use server::Server;
+use node::Node;
 
 /// Broadcast represents a single bi-directional communication with two
 /// nodes within the cluster. The communication does **not** need to be

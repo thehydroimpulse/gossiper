@@ -35,7 +35,8 @@ use std::time::duration::Duration;
 
 fn main() {
   // Create a new server task. This spawns a separate task
-  // where the gossip protocol will operate in.
+  // where the gossip protocol will operate in. The address and port
+  // will only be used if a transport is defined.
   let mut task = Server::create("127.0.0.1", 5666);
 
   // Shutdown in the specified time in seconds. Since this is an example,
