@@ -5,6 +5,8 @@ use std::comm::{Receiver, Sender};
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 use uuid::Uuid;
+use std::io::timer::Timer;
+use std::time::duration::Duration;
 
 use addr::Addr;
 use broadcast::Broadcast;
@@ -99,6 +101,56 @@ pub struct Vertex {
     edges: Vec<Rc<Vertex>>
 }
 
+pub struct ServerTask {
+    /// Part of a channel that the server sends messages to.
+    receiver: Receiver<ServerMsg>,
+    /// Part of a channel that communicates with the server.
+    sender: Sender<ServerMsg>
+}
+
+impl ServerTask {
+    ///
+    /// ```rust
+    /// use gossip::{ServerTask};
+    ///
+    /// let mut task = ServerTask::create("127.0.0.1", 4555);
+    /// task.close();
+    /// ```
+    pub fn create(ip: &str, port: u16) -> ServerTask {
+        // Create an intermediate channel.
+        let (tx, rx) = channel();
+        let (sender, receiver) = channel();
+        let addr = ip.to_string();
+
+        spawn(proc() {
+            // Create a new server.
+            let mut server = Server::new(sender.clone());
+            tx.send(server.sender.clone());
+            server.listen(addr.as_slice(), port);
+        });
+
+
+        ServerTask {
+            receiver: receiver,
+            sender: rx.recv()
+        }
+    }
+
+    pub fn shutdown(&mut self, time: Duration) {
+        let mut timer = Timer::new().unwrap();
+        timer.sleep(time);
+        self.close();
+    }
+
+    pub fn close(&mut self) {
+        self.sender.send(Shutdown(UserInitiatedShutdown));
+    }
+
+    pub fn recv(&mut self) -> ServerMsg {
+        self.receiver.recv()
+    }
+}
+
 /// A server/node/peer is the most atomic unit within a cluster. Each node is equal with it's peers,
 /// thus we don't have any leader or election processes. Each server is identified with a unique ID
 /// that is randomly generated, along with the appropriate state.
@@ -111,26 +163,22 @@ pub struct Vertex {
 /// Usage:
 ///
 /// ```rust
-/// use gossip::Server;
+/// use gossip::{Server, Shutdown};
+/// use std::time::duration::Duration;
 ///
-/// // Create a local channel to communicate with.
-/// let (tx, rx) = channel();
+/// let mut task = Server::create("127.0.0.1", 5666);
 ///
-/// // Spawn a separate task for the server.
-/// spawn(proc() {
-///     // Create a new server with the new channel:
-///     let mut server = Server::new(tx);
-///
-///     // Bind the server to a given address:
-///     server.listen("127.0.0.1", 7888).unwrap();
-///
-///     // Shutdown the server, we don't have anything to do yet.
-///     server.close();
-/// });
+/// // Shutdown in the specified time in seconds.
+/// task.shutdown(Duration::seconds(1));
 ///
 /// // Wait for new messages. This will block the main task until the
 /// // server has been shutdown.
-/// rx.recv();
+/// loop {
+///     match task.recv() {
+///         Shutdown(reason) => break,
+///         _ => {}
+///     }
+/// }
 /// ```
 pub struct Server {
     /// A unique id for the server. This allows servers to talk about each other in
@@ -144,19 +192,14 @@ pub struct Server {
     state: State,
     /// We need to know a list of servers in the cluster (excluding itself).
     servers: Vec<Node>,
-    /// A receiver is used for incoming messages/variants.
     receiver: Receiver<ServerMsg>,
-    /// Used to send to the previous receiver. This is meant to be copied to various tasks
-    /// that need it.
     sender: Sender<ServerMsg>,
-    /// Client sender.
-    ctx: Sender<ServerMsg>
+    /// External sender
+    tx: Sender<ServerMsg>
 }
 
 impl Server {
-    /// Create a brand new server with a bunch of defaults. It won't actually connect to
-    /// anything nor do anything. That's up to the transports to initiate the connections
-    /// and such.
+
     pub fn new(sender: Sender<ServerMsg>) -> Server {
         // Create a default channel for the server itself.
         let (tx, rx) = channel();
@@ -168,19 +211,54 @@ impl Server {
             servers: Vec::new(),
             receiver: rx,
             sender: tx,
-            ctx: sender
+            tx: sender
         };
 
         server
     }
 
+    /// Create a brand new server with a bunch of defaults. It won't actually connect to
+    /// anything nor do anything. That's up to the transports to initiate the connections
+    /// and such.
+    ///
+    /// 1. Chan<ServerMsg>: Server -> User
+    /// 2. Chan<Sender<ServerMsg>>: User -> Server
+    ///
+    /// 1. We need the user to receive real messages.
+    /// 2. We need the user to be able to send real messages back to the server.
+    pub fn create(ip: &str, port: u16) -> ServerTask {
+        ServerTask::create(ip, port)
+    }
+
+    /// Bind the server to the specified address. If there's a transport,
+    /// it has the possibility of failing, otherwise, it uses an in-memory
+    /// function.
     pub fn listen(&mut self, ip: &str, port: u16) -> GossipResult<()> {
         self.addr = Some(Addr::new(ip, port));
+
+        loop {
+            match self.receiver.recv() {
+                Shutdown(reason) => {
+                    println!("Server is shutting down, reason: {}", reason);
+                    self.tx.send(Shutdown(UserInitiatedShutdown));
+                    break;
+                },
+                _ => {}
+            }
+        }
+
         Ok(())
     }
 
+    /// Shutdown the current server and disconnect from the cluster. This has to first
+    /// communicate with the cluster to properly disconnect it, so it's an asynchronous
+    /// operation.
+    ///
+    /// Note that this method is only called from the server's task, not from the user's
+    /// tasks. To do the latter, you'll have to use the Sender that the server passes to
+    /// you.
     pub fn close(&mut self) {
-        self.ctx.send(Shutdown(UserInitiatedShutdown));
+        //self.ctx.send(Shutdown(UserInitiatedShutdown));
     }
 }
 

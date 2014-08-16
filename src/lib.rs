@@ -22,10 +22,10 @@ extern crate uuid;
 extern crate rand;
 extern crate serialize;
 extern crate core;
-
+extern crate time;
 extern crate msgpack;
 
-pub use server::{Server, Message};
+pub use server::{Server, Message, Shutdown, ServerTask};
 pub use result::{GossipResult, GossipError};
 pub use addr::Addr;
 

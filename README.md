@@ -30,36 +30,29 @@ doesn't include any transport mechanism, so it's purely in-memory. A TCP transpo
 is shipped with Gossip which we'll get to later on.
 
 ```rust
-use gossip::Server;
+use gossip::{Server, Shutdown};
+use std::time::duration::Duration;
 
 fn main() {
-    // Create a local channel to communicate with. This will allow us
-    // to communicate with the server in another task. The sender (tx)
-    // is sent to the server's task, while the receiver (rx) is ours
-    // to keep.
-    let (tx, rx) = channel();
+  // Create a new server task. This spawns a separate task
+  // where the gossip protocol will operate in.
+  let mut task = Server::create("127.0.0.1", 5666);
 
-    // Spawn a separate task for the server.
-    spawn(proc() {
-        // Create a new server with the sender we created earlier. This
-        // will allow the server to send us messages back.
-        let mut server = Server::new(tx);
+  // Shutdown in the specified time in seconds. Since this is an example,
+  // we'll just shutdown immediately because we have nothing else to do.
+  task.shutdown(Duration::seconds(1));
 
-        // Bind the server to a given address and unwrap right away. You'd
-        // most likely provide a stronger error handling than simply failing
-        // if something goes wrong (like an already used port).
-        server.listen("127.0.0.1", 7888).unwrap();
-
-        // Shutdown the server, we don't have anything to do yet so we
-        // don't want to hang on forever. Realistically, you would keep going.
-        server.close();
-    });
-
-    // Wait for new messages. This will block the main task until the
-    // server has been shutdown. You can further pattern match against this
-    // return value to determine what we got. You'd also probably end up having
-    // this line within a loop.
-    rx.recv();
+  // Wait for new messages. This will block the main task until the
+  // server has been shutdown.
+  loop {
+       match task.recv() {
+           Shutdown(reason) => {
+               println!("The server is shutting down. Reason: {}", reason);
+               break;
+           },
+           _ => {}
+       }
+  }
 }
 ```
 
