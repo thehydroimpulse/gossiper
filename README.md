@@ -41,18 +41,24 @@ fn main() {
 
     // Spawn a separate task for the server.
     spawn(proc() {
-        // Create a new server with the new channel:
+        // Create a new server with the sender we created earlier. This
+        // will allow the server to send us messages back.
         let mut server = Server::new(tx);
 
-        // Bind the server to a given address:
+        // Bind the server to a given address and unwrap right away. You'd
+        // most likely provide a stronger error handling than simply failing
+        // if something goes wrong (like an already used port).
         server.listen("127.0.0.1", 7888).unwrap();
 
-        // Shutdown the server, we don't have anything to do yet.
+        // Shutdown the server, we don't have anything to do yet so we
+        // don't want to hang on forever. Realistically, you would keep going.
         server.close();
     });
 
     // Wait for new messages. This will block the main task until the
-    // server has been shutdown.
+    // server has been shutdown. You can further pattern match against this
+    // return value to determine what we got. You'd also probably end up having
+    // this line within a loop.
     rx.recv();
 }
 ```
