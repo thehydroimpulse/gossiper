@@ -37,16 +37,16 @@ fn main() {
   // Create a new server task. This spawns a separate task
   // where the gossip protocol will operate in. The address and port
   // will only be used if a transport is defined.
-  let mut task = Server::create("127.0.0.1", 5666);
+  let mut server = Server::create("127.0.0.1", 5666);
 
   // Shutdown in the specified time in seconds. Since this is an example,
   // we'll just shutdown immediately because we have nothing else to do.
-  task.shutdown(Duration::seconds(1));
+  server.shutdown_in(Duration::seconds(1));
 
   // Wait for new messages. This will block the main task until the
   // server has been shutdown.
   loop {
-       match task.recv() {
+       match server.recv() {
            Shutdown(reason) => {
                println!("The server is shutting down. Reason: {}", reason);
                break;
