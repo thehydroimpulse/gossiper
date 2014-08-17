@@ -22,6 +22,7 @@ extern crate uuid;
 extern crate rand;
 extern crate serialize;
 extern crate core;
+extern crate sync;
 extern crate time;
 extern crate msgpack;
 
@@ -36,5 +37,5 @@ mod health;
 mod graph;
 mod state;
 mod node;
-mod broadcast;
-mod server;
+pub mod broadcast;
+pub mod server;

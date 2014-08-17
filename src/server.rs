@@ -1,6 +1,3 @@
-//! Server implementation.
-
-use std::collections::hashmap::HashSet;
 use std::comm::{Receiver, Sender};
 use uuid::Uuid;
 use std::io::timer::Timer;
@@ -25,6 +22,15 @@ pub enum ShutdownReason {
     Failure
 }
 
+/// Current status of a particular server.
+#[deriving(Show, PartialEq, Clone)]
+pub enum Status {
+    Initializing,
+    Running,
+    ShuttingDown,
+    Failing
+}
+
 /// All the possible types of messages we can send to most of the channels that communicate with
 /// the server. The most common one is the `Message` variant, which initiates/receives a new
 /// broadcast/gossip to the appropriate nodes.
@@ -45,9 +51,9 @@ pub enum ServerMessage {
 /// clean API.
 pub struct ServerTask {
     /// Part of a channel that the server sends messages to.
-    receiver: Receiver<ServerMsg>,
+    receiver: Receiver<ServerMessage>,
     /// Part of a channel that communicates with the server.
-    sender: Sender<ServerMsg>
+    sender: Sender<ServerMessage>
 }
 
 impl ServerTask {
@@ -87,7 +93,7 @@ impl ServerTask {
             tx.send(server.sender.clone());
 
             // Start the server. This will run forever until it's killed.
-            server.listen(addr.as_slice(), port);
+            server.listen(addr.as_slice(), port).unwrap();
         });
 
         ServerTask {
@@ -112,7 +118,7 @@ impl ServerTask {
 
     /// A slightly nicer interface for sending messages to the Server. This
     /// allows us to keep the `receiver` and `sender` private.
-    pub fn recv(&mut self) -> ServerMsg {
+    pub fn recv(&mut self) -> ServerMessage {
         self.receiver.recv()
     }
 }
@@ -153,6 +159,10 @@ pub struct Server {
     /// The server may have an address to bind to. We make it optional to have a cleaner API
     /// to initially create the server, as the address is only needed at the .listen method.
     addr: Option<Addr>,
+    /// Keep track of the server's status so that operations can be applied or rejected depending
+    /// on which status it's current set on. This allows us to track whether the server
+    /// has already initiated a shutdown or whether it's still running.
+    status: Status,
     /// The state handles the core Gossip protocol. It's basically a giant state machine
     /// that keeps track of which nodes to communicate with, which nodes are alive/dead/failing,
     /// etc...
@@ -162,15 +172,15 @@ pub struct Server {
     servers: Vec<Node>,
     /// The internal receiver to handle incoming messages. These can be messages coming from a
     /// transport, or from a user.
-    receiver: Receiver<ServerMsg>,
+    receiver: Receiver<ServerMessage>,
     /// The sender-half of the previous channel. This is copied to the user and transports to send
     /// incoming messages. These aren't always broadcasts! Broadcasts are simply one kind of server
     /// message.
-    sender: Sender<ServerMsg>,
+    sender: Sender<ServerMessage>,
     /// This is the user sender so that we can communicate with the end user of this crate. Any
     /// broadcasts that we don't handle will be relayed to the user's sender and they can take
     /// care of it.
-    tx: Sender<ServerMsg>
+    tx: Sender<ServerMessage>
 }
 
 impl Server {
@@ -180,7 +190,7 @@ impl Server {
     ///
     /// This function requires a Sender so that the server can relay messages
     /// externally (such as the user of the crate).
-    pub fn new(sender: Sender<ServerMsg>) -> Server {
+    pub fn new(sender: Sender<ServerMessage>) -> Server {
         // Create an internal channel for the server. The sender is often
         // copied around to various components.
         let (tx, rx) = channel();
@@ -188,6 +198,7 @@ impl Server {
         Server {
             id: Uuid::new_v4(),
             addr: None,
+            status: Initializing,
             state: State::new(),
             servers: Vec::new(),
             receiver: rx,
@@ -208,6 +219,7 @@ impl Server {
     /// it has the possibility of failing.
     pub fn listen(&mut self, ip: &str, port: u16) -> GossipResult<()> {
         self.addr = Some(Addr::new(ip, port));
+        self.status = Running;
 
         // FIXME: We'll probably need a select! macro invocation to allow the ability
         // to read from multiple sources.
@@ -233,11 +245,53 @@ impl Server {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Arc, Mutex};
 
     #[test]
     fn default_server() {
         let (tx, rx) = channel();
         let s = Server::new(tx);
         assert!(s.addr.is_none())
+        assert_eq!(s.status, Initializing);
+    }
+
+    #[test]
+    fn status_running() {
+        let (tx, rx) = channel();
+
+        // Create the task local mutex.
+        let mutex = Arc::new(Mutex::new(Server::new(tx)));
+
+        // Copy the mutex (through the Arc) for use in another task.
+        let mutex2 = mutex.clone();
+
+        // We need to get the sender from the server.
+        let mut val = mutex.lock();
+        let sender = (*val).sender.clone();
+
+        // Release the mutex.
+        drop(val);
+
+        spawn(proc() {
+            let mut val = mutex2.lock();
+            val.listen("127.0.0.1", 8777);
+        });
+
+        sender.send(Shutdown(UserInitiatedShutdown));
+
+        match rx.recv() {
+            Shutdown(reason) if reason == UserInitiatedShutdown => {
+                assert!(true);
+            },
+            _ => fail!("Unexpected output")
+        }
+    }
+
+    #[test]
+    fn shutdown_server() {
+        let (tx, rx) = channel();
+        let mut s = Server::new(tx);
+
+        s.sender.send(Shutdown(UserInitiatedShutdown));
     }
 }

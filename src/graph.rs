@@ -1,5 +1,5 @@
 use std::collections::hashmap::HashSet;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 
 use node::Node;
 

@@ -9,8 +9,7 @@ pub struct State {
     eager: HashSet<Node>,
     lazy: HashSet<Node>,
     health: Health,
-    broadcasts: Vec<Broadcast>,
-    graph: Graph
+    broadcasts: Vec<Broadcast>
 }
 
 impl State {
@@ -21,8 +20,7 @@ impl State {
             eager: HashSet::new(),
             lazy: HashSet::new(),
             health: Yellow,
-            broadcasts: Vec::new(),
-            graph: Graph::new()
+            broadcasts: Vec::new()
         }
     }
 }
