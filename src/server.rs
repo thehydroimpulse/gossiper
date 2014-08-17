@@ -2,7 +2,6 @@
 
 use std::collections::hashmap::HashSet;
 use std::comm::{Receiver, Sender};
-use std::rc::{Rc, Weak};
 use uuid::Uuid;
 use std::io::timer::Timer;
 use std::time::duration::Duration;
@@ -15,6 +14,10 @@ use node::Node;
 use health::{Health};
 use state::State;
 
+/// Each shutdown command needs to have a reason. Sometimes, we may not know the reason
+/// of a particular shutdown (the network may fail, but we don't know if it's them or us, etc...).
+/// This also improves error handling and error reporting to where it allows one to report the type
+/// of shutdown and when.
 #[deriving(Show, PartialEq)]
 pub enum ShutdownReason {
     UserInitiatedShutdown,
@@ -22,19 +25,24 @@ pub enum ShutdownReason {
     Failure
 }
 
-/// Messages that can be sent and received to and from the server task.
+/// All the possible types of messages we can send to most of the channels that communicate with
+/// the server. The most common one is the `Message` variant, which initiates/receives a new
+/// broadcast/gossip to the appropriate nodes.
 #[deriving(Show, PartialEq)]
-pub enum ServerMsg {
-    /// Receive a particular broadcast. We will commit it in our log that can persist to disk.
+pub enum ServerMessage {
+    /// A broadcast/gossip that can be sent and/or received!
     Message(Broadcast),
-    /// A signal to kill the current server. This will send a IAmShuttingDown message as
-    /// a gossip message to let the cluster know why it's shutting down.
+    /// A shutdown command to the local node. This is an internal variant and thus isn't used
+    /// to kill another member within the cluster. If we have received one of those commands, then
+    /// this is emitted internally.
     Shutdown(ShutdownReason),
-    /// Kill a specific node in the cluster. This is a state change rather than a gossip. This will
-    /// remove a specific node from the cluster.
-    KillNode(Node)
 }
 
+/// Handle the communication and setup of the server. Each server is spawned on
+/// a separate task for isolation and independence. Thus, the only communication mechanism
+/// is through the use of channels. Instead of requiring the user of the crate to initialize
+/// all the local channels and such, this handles it automatically resulting in a super
+/// clean API.
 pub struct ServerTask {
     /// Part of a channel that the server sends messages to.
     receiver: Receiver<ServerMsg>,
@@ -43,26 +51,44 @@ pub struct ServerTask {
 }
 
 impl ServerTask {
+    /// Create a new `ServerTask` that will handle the initialization of
+    /// a server in a separate task. This will also handle creating all the required
+    /// channels and such.
     ///
     /// ```rust
     /// use gossip::{ServerTask};
     ///
     /// let mut task = ServerTask::create("127.0.0.1", 4555);
-    /// task.close();
+    ///
+    /// // We need to shutdown the system so that we don't hang in the
+    /// // tests.
+    /// task.shutdown();
     /// ```
     pub fn create(ip: &str, port: u16) -> ServerTask {
-        // Create an intermediate channel.
+        // Create an intermediate channel to send and receive another Sender
+        // that will be used in the `ServerTask`. This channel is only used
+        // once and then thrown away.
         let (tx, rx) = channel();
+
+        // Create another channel that will act as the local receiver. The sender
+        // will be sent to the server.
         let (sender, receiver) = channel();
+
+        // A slice does not implement `Send` so we have to allocate it first.
         let addr = ip.to_string();
 
         spawn(proc() {
-            // Create a new server.
+            // Create a new server sending our `Sender`. This allows the server to send the user
+            // messages over the channel.
             let mut server = Server::new(sender.clone());
+
+            // Send back the server's sender portion of the channel. This is how
+            // we can further communicate with the server.
             tx.send(server.sender.clone());
+
+            // Start the server. This will run forever until it's killed.
             server.listen(addr.as_slice(), port);
         });
-
 
         ServerTask {
             receiver: receiver,
@@ -70,16 +96,22 @@ impl ServerTask {
         }
     }
 
-    pub fn shutdown(&mut self, time: Duration) {
+    /// Call the shutdown method after a set duration. This uses a
+    /// synchronous timer.
+    pub fn shutdown_in(&mut self, time: Duration) {
         let mut timer = Timer::new().unwrap();
         timer.sleep(time);
-        self.close();
+        self.shutdown();
     }
 
-    pub fn close(&mut self) {
+    /// Shutdown the current server now. This may not happen right away,
+    /// but as soon as the proper protocol has been followed.
+    pub fn shutdown(&mut self) {
         self.sender.send(Shutdown(UserInitiatedShutdown));
     }
 
+    /// A slightly nicer interface for sending messages to the Server. This
+    /// allows us to keep the `receiver` and `sender` private.
     pub fn recv(&mut self) -> ServerMsg {
         self.receiver.recv()
     }
@@ -103,7 +135,7 @@ impl ServerTask {
 /// let mut task = Server::create("127.0.0.1", 5666);
 ///
 /// // Shutdown in the specified time in seconds.
-/// task.shutdown(Duration::seconds(1));
+/// task.shutdown_in(Duration::seconds(1));
 ///
 /// // Wait for new messages. This will block the main task until the
 /// // server has been shutdown.
@@ -118,27 +150,42 @@ pub struct Server {
     /// A unique id for the server. This allows servers to talk about each other in
     /// a consistent manner.
     id: Uuid,
-    /// Each server has an Addr instance. Regardless of what type of transport it has.
+    /// The server may have an address to bind to. We make it optional to have a cleaner API
+    /// to initially create the server, as the address is only needed at the .listen method.
     addr: Option<Addr>,
     /// The state handles the core Gossip protocol. It's basically a giant state machine
     /// that keeps track of which nodes to communicate with, which nodes are alive/dead/failing,
     /// etc...
     state: State,
-    /// We need to know a list of servers in the cluster (excluding itself).
+    /// A collection of servers within the cluster. Note that these aren't allocated/running
+    /// servers, so we use another record called `Node` to handle that understanding.
     servers: Vec<Node>,
+    /// The internal receiver to handle incoming messages. These can be messages coming from a
+    /// transport, or from a user.
     receiver: Receiver<ServerMsg>,
+    /// The sender-half of the previous channel. This is copied to the user and transports to send
+    /// incoming messages. These aren't always broadcasts! Broadcasts are simply one kind of server
+    /// message.
     sender: Sender<ServerMsg>,
-    /// External sender
+    /// This is the user sender so that we can communicate with the end user of this crate. Any
+    /// broadcasts that we don't handle will be relayed to the user's sender and they can take
+    /// care of it.
     tx: Sender<ServerMsg>
 }
 
 impl Server {
 
+    /// Create a standard, default server. This only initializes the server
+    /// but does **not** start it! So it doesn't spawn a new thread.
+    ///
+    /// This function requires a Sender so that the server can relay messages
+    /// externally (such as the user of the crate).
     pub fn new(sender: Sender<ServerMsg>) -> Server {
-        // Create a default channel for the server itself.
+        // Create an internal channel for the server. The sender is often
+        // copied around to various components.
         let (tx, rx) = channel();
 
-        let server = Server {
+        Server {
             id: Uuid::new_v4(),
             addr: None,
             state: State::new(),
@@ -146,35 +193,33 @@ impl Server {
             receiver: rx,
             sender: tx,
             tx: sender
-        };
-
-        server
+        }
     }
 
-    /// Create a brand new server with a bunch of defaults. It won't actually connect to
-    /// anything nor do anything. That's up to the transports to initiate the connections
-    /// and such.
-    ///
-    /// 1. Chan<ServerMsg>: Server -> User
-    /// 2. Chan<Sender<ServerMsg>>: User -> Server
-    ///
-    /// 1. We need the user to receive real messages.
-    /// 2. We need the user to be able to send real messages back to the server.
+    /// Create a new `ServerTask` that is responsible for fully initializing and starting
+    /// the server component. A `ServerTask` is what the user will interact with as the server
+    /// is running within another task, so the communication protocol is through channels
+    /// exclusively.
     pub fn create(ip: &str, port: u16) -> ServerTask {
         ServerTask::create(ip, port)
     }
 
     /// Bind the server to the specified address. If there's a transport,
-    /// it has the possibility of failing, otherwise, it uses an in-memory
-    /// function.
+    /// it has the possibility of failing.
     pub fn listen(&mut self, ip: &str, port: u16) -> GossipResult<()> {
         self.addr = Some(Addr::new(ip, port));
 
+        // FIXME: We'll probably need a select! macro invocation to allow the ability
+        // to read from multiple sources.
         loop {
+            // Receive the next message from the channel. This can be from any component.
             match self.receiver.recv() {
+                // Ok, so we are tasked with shutting down. We'll relay the shutdown
+                // message back to the user so they can do some cleanup or other operations.
+                //
+                // FIXME: We'll need to broadcast to the cluster that this server is shutting down.
                 Shutdown(reason) => {
-                    println!("Server is shutting down, reason: {}", reason);
-                    self.tx.send(Shutdown(UserInitiatedShutdown));
+                    self.tx.send(Shutdown(reason));
                     break;
                 },
                 _ => {}
@@ -183,19 +228,7 @@ impl Server {
 
         Ok(())
     }
-
-    /// Shutdown the current server and disconnect from the cluster. This has to first
-    /// communicate with the cluster to properly disconnect it, so it's an asynchronous
-    /// operation.
-    ///
-    /// Note that this method is only called from the server's task, not from the user's
-    /// tasks. To do the latter, you'll have to use the Sender that the server passes to
-    /// you.
-    pub fn close(&mut self) {
-        //self.ctx.send(Shutdown(UserInitiatedShutdown));
-    }
 }
-
 
 #[cfg(test)]
 mod tests {
