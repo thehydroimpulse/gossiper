@@ -256,7 +256,7 @@ mod tests {
     }
 
     #[test]
-    fn status_running() {
+    fn server_access_with_mutex() {
         let (tx, rx) = channel();
 
         // Create the task local mutex.
@@ -277,6 +277,7 @@ mod tests {
             val.listen("127.0.0.1", 8777);
         });
 
+        // Shutdown the server so we can finish the test.
         sender.send(Shutdown(UserInitiatedShutdown));
 
         match rx.recv() {
