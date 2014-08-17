@@ -49,30 +49,30 @@ pub enum ServerMessage {
 /// is through the use of channels. Instead of requiring the user of the crate to initialize
 /// all the local channels and such, this handles it automatically resulting in a super
 /// clean API.
-pub struct ServerTask {
+pub struct Server {
     /// Part of a channel that the server sends messages to.
     receiver: Receiver<ServerMessage>,
     /// Part of a channel that communicates with the server.
     sender: Sender<ServerMessage>
 }
 
-impl ServerTask {
-    /// Create a new `ServerTask` that will handle the initialization of
+impl Server {
+    /// Create a new `Server` that will handle the initialization of
     /// a server in a separate task. This will also handle creating all the required
     /// channels and such.
     ///
     /// ```rust
-    /// use gossip::{ServerTask};
+    /// use gossip::{Server};
     ///
-    /// let mut task = ServerTask::create("127.0.0.1", 4555);
+    /// let mut server = Server::create("127.0.0.1", 4555);
     ///
     /// // We need to shutdown the system so that we don't hang in the
     /// // tests.
-    /// task.shutdown();
+    /// server.shutdown();
     /// ```
-    pub fn create(ip: &str, port: u16) -> ServerTask {
+    pub fn create(ip: &str, port: u16) -> Server {
         // Create an intermediate channel to send and receive another Sender
-        // that will be used in the `ServerTask`. This channel is only used
+        // that will be used in the `Server`. This channel is only used
         // once and then thrown away.
         let (tx, rx) = channel();
 
@@ -86,7 +86,7 @@ impl ServerTask {
         spawn(proc() {
             // Create a new server sending our `Sender`. This allows the server to send the user
             // messages over the channel.
-            let mut server = Server::new(sender.clone());
+            let mut server = InternalServer::new(sender.clone());
 
             // Send back the server's sender portion of the channel. This is how
             // we can further communicate with the server.
@@ -96,7 +96,7 @@ impl ServerTask {
             server.listen(addr.as_slice(), port).unwrap();
         });
 
-        ServerTask {
+        Server {
             receiver: receiver,
             sender: rx.recv()
         }
@@ -135,24 +135,24 @@ impl ServerTask {
 /// Usage:
 ///
 /// ```rust
-/// use gossip::{Server, Shutdown};
+/// use gossip::{InternalServer, Shutdown};
 /// use std::time::duration::Duration;
 ///
-/// let mut task = Server::create("127.0.0.1", 5666);
+/// let mut server = InternalServer::create("127.0.0.1", 5666);
 ///
 /// // Shutdown in the specified time in seconds.
-/// task.shutdown_in(Duration::seconds(1));
+/// server.shutdown_in(Duration::seconds(1));
 ///
 /// // Wait for new messages. This will block the main task until the
 /// // server has been shutdown.
 /// loop {
-///     match task.recv() {
+///     match server.recv() {
 ///         Shutdown(reason) => break,
 ///         _ => {}
 ///     }
 /// }
 /// ```
-pub struct Server {
+pub struct InternalServer {
     /// A unique id for the server. This allows servers to talk about each other in
     /// a consistent manner.
     id: Uuid,
@@ -183,19 +183,19 @@ pub struct Server {
     tx: Sender<ServerMessage>
 }
 
-impl Server {
+impl InternalServer {
 
     /// Create a standard, default server. This only initializes the server
     /// but does **not** start it! So it doesn't spawn a new thread.
     ///
     /// This function requires a Sender so that the server can relay messages
     /// externally (such as the user of the crate).
-    pub fn new(sender: Sender<ServerMessage>) -> Server {
+    pub fn new(sender: Sender<ServerMessage>) -> InternalServer {
         // Create an internal channel for the server. The sender is often
         // copied around to various components.
         let (tx, rx) = channel();
 
-        Server {
+        InternalServer {
             id: Uuid::new_v4(),
             addr: None,
             status: Initializing,
@@ -207,12 +207,12 @@ impl Server {
         }
     }
 
-    /// Create a new `ServerTask` that is responsible for fully initializing and starting
-    /// the server component. A `ServerTask` is what the user will interact with as the server
+    /// Create a new `Server` that is responsible for fully initializing and starting
+    /// the server component. A `Server` is what the user will interact with as the server
     /// is running within another task, so the communication protocol is through channels
     /// exclusively.
-    pub fn create(ip: &str, port: u16) -> ServerTask {
-        ServerTask::create(ip, port)
+    pub fn create(ip: &str, port: u16) -> Server {
+        Server::create(ip, port)
     }
 
     /// Bind the server to the specified address. If there's a transport,
@@ -250,7 +250,7 @@ mod tests {
     #[test]
     fn default_server() {
         let (tx, rx) = channel();
-        let s = Server::new(tx);
+        let s = InternalServer::new(tx);
         assert!(s.addr.is_none())
         assert_eq!(s.status, Initializing);
     }
@@ -260,7 +260,7 @@ mod tests {
         let (tx, rx) = channel();
 
         // Create the task local mutex.
-        let mutex = Arc::new(Mutex::new(Server::new(tx)));
+        let mutex = Arc::new(Mutex::new(InternalServer::new(tx)));
 
         // Copy the mutex (through the Arc) for use in another task.
         let mutex2 = mutex.clone();
@@ -290,7 +290,7 @@ mod tests {
     #[test]
     fn shutdown_server() {
         let (tx, rx) = channel();
-        let mut s = Server::new(tx);
+        let mut s = InternalServer::new(tx);
 
         s.sender.send(Shutdown(UserInitiatedShutdown));
     }

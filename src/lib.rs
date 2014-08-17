@@ -26,7 +26,7 @@ extern crate sync;
 extern crate time;
 extern crate msgpack;
 
-pub use server::{Server, Message, Shutdown, ServerTask};
+pub use server::{Server, Message, Shutdown, InternalServer};
 pub use result::{GossipResult, GossipError};
 pub use addr::Addr;
 
