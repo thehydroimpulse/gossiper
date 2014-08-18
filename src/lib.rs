@@ -1,7 +1,6 @@
-#![crate_id = "gossip"]
 #![crate_type = "lib"]
-#![feature(globs, macro_rules, unsafe_destructor)]
-#![allow(unused_must_use,dead_code, unused_imports, unused_variable)]
+#![feature(globs, macro_rules, unsafe_destructor, plugin_registrar, struct_inherit)]
+#![allow(missing_doc)]
 
 //! Gossip.rs is a gossip/epidemic protocol based on the
 //! paper "Epidemic Broadcast Trees" in which it introduced
@@ -23,20 +22,20 @@ extern crate uuid;
 extern crate rand;
 extern crate serialize;
 extern crate core;
-
+extern crate sync;
+extern crate time;
 extern crate msgpack;
 
-pub mod server;
-pub mod state;
-pub mod message;
-pub mod broadcast;
-pub mod transport;
-pub mod tcp;
-pub mod connection;
+pub use server::{Server, Message, Shutdown, InternalServer};
+pub use result::{GossipResult, GossipError};
+pub use addr::Addr;
+
 pub mod result;
-pub mod response;
-pub mod version;
-pub mod health;
-pub mod tag;
 pub mod addr;
-pub mod encoding;
+pub mod tag;
+mod health;
+mod graph;
+mod state;
+mod node;
+pub mod broadcast;
+pub mod server;

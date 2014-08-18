@@ -4,11 +4,8 @@ name = "gossip"
 version = "0.1.0"
 authors = [ "Daniel Fagnan <dnfagnan@gmail.com>" ]
 
-[[lib]]
-
-name = "gossip"
-path = "src/gossip/lib.rs"
+[dependencies.uuid]
+git = "https://github.com/rust-lang/uuid"
 
 [dependencies.msgpack]
-
-git = "https://github.com/thehydroimpulse/rust-msgpack"
+git = "https://github.com/mneumann/rust-msgpack"

@@ -12,14 +12,49 @@ Gossip is a Cargo package. You can simply include Gossip as a dependency.
 
 ```toml
 # Cargo.toml
-[project]
-
-name = "foobar"
-version = "0.0.1"
-authors = []
-
 [dependencies.gossip]
 git = "https://github.com/thehydroimpulse/gossip.rs"
+```
+
+## Getting Started
+
+After adding Gossip as a dependency, you'll want to include the crate within your project:
+
+```rust
+extern crate gossip;
+```
+
+Now you'll have access to the Gossip system. We'll simply start with a brief example
+of creating a single server that listens on a given address. By default, this actually
+doesn't include any transport mechanism, so it's purely in-memory. A TCP transport
+is shipped with Gossip which we'll get to later on.
+
+```rust
+use gossip::{Server, Shutdown};
+use std::time::duration::Duration;
+
+fn main() {
+  // Create a new server task. This spawns a separate task
+  // where the gossip protocol will operate in. The address and port
+  // will only be used if a transport is defined.
+  let mut server = Server::create("127.0.0.1", 5666);
+
+  // Shutdown in the specified time in seconds. Since this is an example,
+  // we'll just shutdown immediately because we have nothing else to do.
+  server.shutdown_in(Duration::seconds(1));
+
+  // Wait for new messages. This will block the main task until the
+  // server has been shutdown.
+  loop {
+       match server.recv() {
+           Shutdown(reason) => {
+               println!("The server is shutting down. Reason: {}", reason);
+               break;
+           },
+           _ => {}
+       }
+  }
+}
 ```
 
 ## What's A Gossip Protocol?
@@ -45,100 +80,6 @@ I believe Rust is perfect for distributed systems which are highly performant an
 Rust, on the other hand, doesn't have this limitation. It ships with a single API for managing tasks (akin to threads), but, it has two separate implementations: green and native. This allows someone to build systems without picking either of them. The user gets to pick based on which crate they bundle.
 
 Rust is also more in-line to Erlang in terms of error handling. Each task is completely isolated and can be killed, then restarted.
-
-## Getting Started
-
-After adding Gossip as a dependency, you'll want to include the crate within your project:
-
-```rust
-extern crate gossip;
-```
-
-Now you'll have access to the Gossip system.
-
-### Creating a Server
-
-A server is the most atomic piece in a cluster. Each server (/peer/node) is an equal member of a cluster. Each server will need to provide a transport object (we'll be using the TCP transport).
-
-```rust
-use gossip::server::Server;
-use gossip::tcp::transport::TcpTransport;
-
-/// Initialize the gossip server.
-fn initialize() {
-    let mut transport = TcpTransport::new("0.0.0.0", 5499);
-    let mut server = Server::new(transport);
-
-    server.listen();
-}
-
-fn main() {
-    initialize();
-}
-```
-
-Now we have a single server listening on a new cluster.
-
-
-### Joining An Existing Cluster
-
-To join a cluster, you simply need the ip and port of a peer within that cluster (i.e., any current member).
-
-```rust
-server.join("10.0.0.4", 5499);
-```
-
-### Sending A Custom Message
-
-To send a message, you simply need to implement `Encodable` and `Decodable` for it:
-
-```rust
-use serialize::{Encodable, Decodable};
-
-#[deriving(Encodable, Decodable)]
-pub struct MessageFoo {
-    age: int
-}
-```
-
-Now you can send a new broadcast:
-
-```rust
-server.broadcast(MessageFoo { age: 29 });
-```
-
-### Receiving A Message
-
-To receive a message, you simply listen onto the server's channel. Because Gossip doesn't have any information on the type of message it was (it's just a bunch of bytes on the wire), we tag it with some metadata (typically the name of the type). The user will receive this tagged message which can then be resolved.
-
-```rust
-use gossip::tag::TaggedValue;
-
-// Block until we receive a message.
-match server.receive() {
-    TaggedValue { }
-}
-```
-
-## Use Cases
-
-Because this is an agnostic gossip protocol (i.e., it can be used for any system built on-top of it.), we can't make certain guarantees that some systems make.
-
-In the original Plumtree paper, it does simulations around 10,000+ node clusters in a P2P system. Because of the large number of peers, the cluster can't be fully connected (i.e., nodes don't have the possibility to communicate with every other node in the cluster.). Thus, it's partially connected; each node has the ability to communicate with a small subset of every other node.
-
-However, when dealing with, say database clusters, you'll never really have 10,000+ nodes in a single cluster. A more realistic number might be a few hundred, maybe a little more. That allows a cluster to be fully connected (i.e., each node may talk to every other node.).
-
-This library will focus on the second use-case for now (having a smaller number of nodes.) but could expand to having the ability to have a partially connected cluster.
-
-
-## Other Implementations
-
-Most gossip protocols are bundled up with the system implementation. For example, Cassandra has it's own implementation of a gossip protocol that's tied up with the whole implementation of Cassandra.
-
-Notable/Inspired implementations:
-
-* Cassandra
-* Riak
 
 ## Papers / Research
 

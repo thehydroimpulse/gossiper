@@ -21,3 +21,4 @@
 *.app
 *.rlib
 target
+Cargo.lock
