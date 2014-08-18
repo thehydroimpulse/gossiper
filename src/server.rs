@@ -18,8 +18,7 @@ use state::State;
 #[deriving(Show, PartialEq)]
 pub enum ShutdownReason {
     UserInitiatedShutdown,
-    NetworkFailure,
-    Failure
+    NetworkFailure
 }
 
 /// Current status of a particular server.
@@ -29,6 +28,21 @@ pub enum Status {
     Running,
     ShuttingDown,
     Failing
+}
+
+#[deriving(Show, PartialEq)]
+pub enum FailureKind {
+    BroadcastFailed
+}
+
+#[deriving(Show, PartialEq)]
+pub enum QueryType {
+    StatusQuery
+}
+
+#[deriving(Show, PartialEq)]
+pub enum QueryResponseType {
+    StatusQueryResponse(Status)
 }
 
 /// All the possible types of messages we can send to most of the channels that communicate with
@@ -42,6 +56,9 @@ pub enum ServerMessage {
     /// to kill another member within the cluster. If we have received one of those commands, then
     /// this is emitted internally.
     Shutdown(ShutdownReason),
+    Failure(FailureKind),
+    Query(QueryType),
+    QueryResponse(QueryResponseType)
 }
 
 /// Handle the communication and setup of the server. Each server is spawned on
@@ -53,7 +70,10 @@ pub struct Server {
     /// Part of a channel that the server sends messages to.
     receiver: Receiver<ServerMessage>,
     /// Part of a channel that communicates with the server.
-    sender: Sender<ServerMessage>
+    sender: Sender<ServerMessage>,
+    /// A buffer of messages that we have gotten, but need to collect before reading them
+    /// later on.
+    buffer: Vec<ServerMessage>
 }
 
 impl Server {
@@ -98,7 +118,8 @@ impl Server {
 
         Server {
             receiver: receiver,
-            sender: rx.recv()
+            sender: rx.recv(),
+            buffer: Vec::new()
         }
     }
 
@@ -120,6 +141,25 @@ impl Server {
     /// allows us to keep the `receiver` and `sender` private.
     pub fn recv(&mut self) -> ServerMessage {
         self.receiver.recv()
+    }
+
+    pub fn broadcast(&mut self, broadcast: Broadcast) {
+        //self.sender.send(Message(broadcast));
+    }
+
+    /// Send the server a request to send back the current status. This is used
+    /// to determine at what stage the server is at. Whether it's running or not.
+    pub fn get_status(&mut self) -> Status {
+        self.sender.send(Query(StatusQuery));
+
+        loop {
+            match self.recv() {
+                QueryResponse(StatusQueryResponse(status)) => {
+                    return status;
+                },
+                msg => self.buffer.push(msg)
+            }
+        }
     }
 }
 
@@ -234,6 +274,9 @@ impl InternalServer {
                     self.tx.send(Shutdown(reason));
                     break;
                 },
+                Query(StatusQuery) => {
+                    self.tx.send(QueryResponse(StatusQueryResponse(self.status)));
+                }
                 _ => {}
             }
         }
@@ -248,7 +291,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     #[test]
-    fn default_server() {
+    fn should_have_default_server() {
         let (tx, rx) = channel();
         let s = InternalServer::new(tx);
         assert!(s.addr.is_none())
@@ -256,7 +299,42 @@ mod tests {
     }
 
     #[test]
-    fn server_access_with_mutex() {
+    fn should_query_server_status() {
+        let mut server = Server::create("localhost", 8777);
+        assert_eq!(server.get_status(), Running);
+        server.shutdown();
+
+        server.recv();
+    }
+
+    #[test]
+    fn should_not_send_without_peers() {
+        let mut i = 0i;
+        let mut server = Server::create("localhost", 8777);
+
+        server.shutdown();
+
+        loop {
+            match server.recv() {
+                Shutdown(reason) => {
+                    if i != 0 {
+                        fail!("Unexpected behaviour 1");
+                    }
+                    break;
+                },
+                Message(broadcast) => {
+                    i += 1;
+                },
+                Failure(reason) if reason == BroadcastFailed => {
+                    assert!(true);
+                },
+                _ => fail!("Unexpected behaviour 2")
+            }
+        }
+    }
+
+    #[test]
+    fn should_have_mutex_with_server() {
         let (tx, rx) = channel();
 
         // Create the task local mutex.
@@ -289,7 +367,7 @@ mod tests {
     }
 
     #[test]
-    fn shutdown_server() {
+    fn should_shutdown_server() {
         let (tx, rx) = channel();
         let mut s = InternalServer::new(tx);
 
