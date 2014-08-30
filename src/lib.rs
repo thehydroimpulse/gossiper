@@ -1,5 +1,4 @@
-#![crate_type = "lib"]
-#![feature(globs, macro_rules, unsafe_destructor, plugin_registrar, struct_inherit)]
+#![feature(globs, macro_rules, unsafe_destructor, plugin_registrar, struct_inherit, import_shadowing)]
 #![allow(missing_doc)]
 
 //! Gossip.rs is a gossip/epidemic protocol based on the
@@ -26,7 +25,7 @@ extern crate sync;
 extern crate time;
 extern crate msgpack;
 
-pub use server::{Server, Message, Shutdown, InternalServer};
+pub use server::{Server, Message};
 pub use result::{GossipResult, GossipError};
 pub use addr::Addr;
 
