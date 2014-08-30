@@ -8,7 +8,7 @@ use std::task::TaskBuilder;
 
 use addr::Addr;
 use broadcast::Broadcast;
-use result::{GossipResult, GossipError};
+use result::{GossipResult, GossipError, UnknownError};
 
 use node::Node;
 use health::{Health};
@@ -136,11 +136,18 @@ impl Server {
         self.process = Some(receiver.recv());
     }
 
-    pub fn shutdown(&self) {
+    fn send(&self, msg: ProcessMessage) -> GossipResult<()> {
         match self.process {
-            Some(ref process) => process.send(Shutdown),
-            None => fail!("Error)")
+            Some(ref p) => p.send(msg),
+            None => return Err(GossipError::new("Failed to send message. Process is not online.", UnknownError))
         }
+
+        Ok(())
+    }
+
+    pub fn shutdown(&self) -> GossipResult<()> {
+        try!(self.send(Shutdown));
+        Ok(())
     }
 }
 
