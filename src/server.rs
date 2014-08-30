@@ -101,6 +101,13 @@ pub struct Server {
 }
 
 impl Server {
+
+    /// Create a new unbound local server. This will create
+    /// an isolated server that has not yet connected to any
+    /// network system and is currently offline.
+    ///
+    /// Starting the server is a manual process.
+    ///
     /// ```rust
     /// use gossip::{Server};
     ///
@@ -120,6 +127,23 @@ impl Server {
         server
     }
 
+    /// Bind the server/node to the local specified
+    /// interface ports. This will bind to the TCP
+    /// stack, as it's the only supported mechanism.
+    ///
+    /// This will go and spawn the required tasks and start
+    /// running everything!
+    ///
+    /// ```rust
+    /// #![allow(unused_must_use)]
+    /// use gossip::{Server};
+    ///
+    /// let mut server = Server::new();
+    /// server.bind("localhost", 8777);
+    ///
+    /// // We need to shutdown otherwise it'll hang.
+    /// server.shutdown();
+    /// ```
     pub fn bind(&mut self, ip: &str, port: u16) {
         self.addr = Some(Addr::new(ip, port));
 
@@ -136,7 +160,10 @@ impl Server {
         self.process = Some(receiver.recv());
     }
 
-    fn send(&self, msg: ProcessMessage) -> GossipResult<()> {
+    /// A wrapper to the `process` Sender. Because it's an
+    /// option, we'll just want to work with results because
+    /// it's more composable.
+    fn process_send(&self, msg: ProcessMessage) -> GossipResult<()> {
         match self.process {
             Some(ref p) => p.send(msg),
             None => return Err(GossipError::new("Failed to send message. Process is not online.", UnknownError))
@@ -145,8 +172,22 @@ impl Server {
         Ok(())
     }
 
+    /// Allow the ability to shutdown a running server from
+    /// another task.
+    ///
+    /// ```rust
+    /// use gossip::{Server};
+    ///
+    /// let mut server = Server::new();
+    ///
+    /// server.bind("localhost", 4555);
+    /// match server.shutdown() {
+    ///     Ok(_) => println!("Server has successfully been terminated!"),
+    ///     Err(err) => fail!("Error while shutting down the server: {}", err)
+    /// }
+    /// ```
     pub fn shutdown(&self) -> GossipResult<()> {
-        try!(self.send(Shutdown));
+        try!(self.process_send(Shutdown));
         Ok(())
     }
 }
