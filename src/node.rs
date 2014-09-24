@@ -106,7 +106,8 @@ impl Node {
 
         match self.sender {
             Some(ref tx) => tx.send(Shutdown),
-            None => return Err(GossipError::new("The node is not running. Shutdown operation failed!", NotListening))
+            None => return Err(GossipError::new("The node is not running. Shutdown operation
+                                                failed!", NotListening))
         }
 
         Ok(())
