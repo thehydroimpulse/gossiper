@@ -2,8 +2,10 @@ use std::comm::{Receiver, Sender};
 use uuid::Uuid;
 use std::io::timer::{sleep, Timer};
 use std::time::duration::Duration;
-use std::sync::{Mutex, Arc};
+use std::sync::{Mutex, Arc, RWLock};
 use sync::atomic::{Relaxed, SeqCst, AtomicBool, AtomicUint};
+use std::io::{TcpListener, TcpStream};
+use std::io::{Acceptor, Listener};
 use std::task::TaskBuilder;
 
 use addr::Addr;
@@ -44,46 +46,39 @@ pub enum ServerMessage {
 }
 
 pub struct Process {
-    cluster: Mutex<Cluster>,
-    status: Mutex<Status>,
-    running: AtomicBool,
-    server_sender: Sender<ProcessMessage>,
-    local_tx: Sender<ProcessMessage>,
-    local_rx: Receiver<ProcessMessage>
+    cluster: RWLock<Cluster>,
+    status: RWLock<Status>,
+    running: AtomicBool
 }
 
 impl Process {
-    pub fn new(sender: Sender<ProcessMessage>) -> Process {
-        let (tx, rx) = channel();
-
+    pub fn new(sender: Sender<Broadcast>) -> Process {
         Process {
-            cluster: Mutex::new(Cluster::new(Uuid::new_v4().to_hyphenated_str())),
-            status: Mutex::new(Initializing),
-            running: AtomicBool::new(false),
-            server_sender: sender,
-            local_tx: tx,
-            local_rx: rx
+            cluster: RWLock::new(Cluster::new(Uuid::new_v4().to_hyphenated_string())),
+            status: RWLock::new(Initializing),
+            running: AtomicBool::new(false)
         }
     }
 
-    pub fn bind(&self) {
-        for msg in self.local_rx.iter() {
-            match msg {
-                Shutdown => break
-            }
-        }
+    pub fn bind(&self, addr: Addr) {
+        let listener = TcpListener::bind(addr.ip.as_slice(), addr.port);
+        let mut listener = listener.listen();
+    }
+
+    pub fn shutdown(&self) -> GossipResult<()> {
+        Ok(())
     }
 }
 
 pub struct Cluster {
-    name: String,
+    id: String,
     members: Vec<Node>
 }
 
 impl Cluster {
     pub fn new(name: String) -> Cluster {
         Cluster {
-            name: name,
+            id: name,
             members: Vec::new()
         }
     }
@@ -95,9 +90,8 @@ impl Cluster {
 pub struct Server {
     id: Uuid,
     addr: Option<Addr>,
-    local_tx: Sender<ProcessMessage>,
-    local_rx: Receiver<ProcessMessage>,
-    process: Option<Sender<ProcessMessage>>
+    process: Arc<Process>,
+    rx: Receiver<Broadcast>
 }
 
 impl Server {
@@ -116,15 +110,12 @@ impl Server {
     pub fn new() -> Server {
         let (tx, rx) = channel();
 
-        let server = Server {
+        Server {
             id: Uuid::new_v4(),
             addr: None,
-            local_tx: tx,
-            local_rx: rx,
-            process: None
-        };
-
-        server
+            process: Arc::new(Process::new(tx.clone())),
+            rx: rx
+        }
     }
 
     /// Bind the server/node to the local specified
@@ -145,31 +136,17 @@ impl Server {
     /// server.shutdown();
     /// ```
     pub fn bind(&mut self, ip: &str, port: u16) {
-        self.addr = Some(Addr::new(ip, port));
+        let addr = Addr::new(ip, port);
+        self.addr = Some(addr.clone());
 
-        let local_tx = self.local_tx.clone();
-        let (sender, receiver) = channel();
+        let process = self.process.clone();
+
+        let mut value = self.process.status.write();
+        *value = Running;
 
         TaskBuilder::new().named("ProcessTask").spawn(proc() {
-            let process = Process::new(local_tx);
-            let tx = process.local_tx.clone();
-            sender.send(tx);
-            process.bind();
+            process.bind(addr);
         });
-
-        self.process = Some(receiver.recv());
-    }
-
-    /// A wrapper to the `process` Sender. Because it's an
-    /// option, we'll just want to work with results because
-    /// it's more composable.
-    fn process_send(&self, msg: ProcessMessage) -> GossipResult<()> {
-        match self.process {
-            Some(ref p) => p.send(msg),
-            None => return Err(GossipError::new("Failed to send message. Process is not online.", UnknownError))
-        }
-
-        Ok(())
     }
 
     /// Allow the ability to shutdown a running server from
@@ -187,8 +164,7 @@ impl Server {
     /// }
     /// ```
     pub fn shutdown(&self) -> GossipResult<()> {
-        try!(self.process_send(Shutdown));
-        Ok(())
+        self.process.shutdown()
     }
 }
 
@@ -197,10 +173,24 @@ impl Server {
 mod tests {
     use super::*;
     use std::sync::{Arc, Mutex};
+    use addr::Addr;
 
     #[test]
-    fn should_be_initializing() {
-        let server = Server::new();
+    fn process_bind_should_not_write_status() {
+        let (sender, receiver) = channel();
+        let process = Process::new(sender);
+        assert!(*(process.status.read()) == Initializing);
+        process.bind(Addr::new("localhost", 4444));
+        assert!(*(process.status.read()) == Initializing);
+        process.shutdown();
+    }
+
+    #[test]
+    fn server_should_change_status_when_listening() {
+        let mut server = Server::new();
+        server.bind("localhost", 5999);
+        assert!(*(server.process.status.read()) == Running);
+        server.shutdown();
     }
 
     #[test]
@@ -212,6 +202,7 @@ mod tests {
     #[test]
     fn should_have_empty_server_list() {
         let server = Server::new();
+        assert!(server.process.cluster.read().members.len() == 0);
     }
 
     #[test]
