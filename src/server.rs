@@ -1,3 +1,7 @@
+//! Server: 
+//!
+//!
+
 use std::comm::{Receiver, Sender};
 use uuid::Uuid;
 use std::io::timer::{sleep, Timer};

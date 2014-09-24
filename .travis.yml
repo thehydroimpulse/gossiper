@@ -1,9 +1,1 @@
-install:
-  - curl http://www.rust-lang.org/rustup.sh | sudo sh -
-
-script:
-  - rustc -v
-  - make test
-
-env:
-  - LD_LIBRARY_PATH=/usr/local/lib
+language: rust
