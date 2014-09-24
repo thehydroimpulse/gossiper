@@ -15,6 +15,19 @@
 //! that need to be highly available and fault-tolerant. Things
 //! such as data processing, analytics, etc... are all great
 //! candidates.
+//!
+//! ---
+//!
+//!   User
+//!    |
+//!    |
+//!   Node
+//!    |
+//!    |
+//!    |
+//! (Process)
+//!
+//!
 
 extern crate collections;
 extern crate uuid;
@@ -27,13 +40,13 @@ extern crate msgpack;
 
 pub use server::{Server, Message};
 pub use result::{GossipResult, GossipError};
+pub use node::{Node};
 pub use addr::Addr;
 
 pub mod result;
 pub mod addr;
 pub mod tag;
 mod health;
-mod graph;
 mod state;
 mod node;
 pub mod broadcast;

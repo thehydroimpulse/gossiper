@@ -1,7 +1,3 @@
-//! Server: 
-//!
-//!
-
 use std::comm::{Receiver, Sender};
 use uuid::Uuid;
 use std::io::timer::{sleep, Timer};
@@ -16,7 +12,6 @@ use addr::Addr;
 use broadcast::Broadcast;
 use result::{GossipResult, GossipError, UnknownError};
 
-use node::Node;
 use health::{Health};
 use state::State;
 
@@ -76,7 +71,7 @@ impl Process {
 
 pub struct Cluster {
     id: String,
-    members: Vec<Node>
+    members: Vec<String>
 }
 
 impl Cluster {

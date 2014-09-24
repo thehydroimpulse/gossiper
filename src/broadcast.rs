@@ -5,7 +5,6 @@ use std::collections::hashmap::HashSet;
 
 use result::GossipResult;
 use server::Server;
-use node::Node;
 
 /// Broadcast represents a single bi-directional communication with two
 /// nodes within the cluster. The communication does **not** need to be
@@ -24,7 +23,7 @@ pub struct Broadcast {
     /// The raw bytes of the message.
     message: Vec<u8>,
     /// A set of servers that have seen/committed the broadcast.
-    committed: HashSet<Node>
+    committed: HashSet<String>
 }
 
 impl Broadcast {

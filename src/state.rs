@@ -1,13 +1,11 @@
 use std::collections::hashmap::HashSet;
 use health::{Health, Yellow};
 use broadcast::Broadcast;
-use graph::Graph;
-use node::Node;
 
 #[deriving(PartialEq, Clone)]
 pub struct State {
-    eager: HashSet<Node>,
-    lazy: HashSet<Node>,
+    eager: HashSet<String>,
+    lazy: HashSet<String>,
     health: Health,
     broadcasts: Vec<Broadcast>
 }
