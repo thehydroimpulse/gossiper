@@ -48,6 +48,7 @@ pub mod addr;
 pub mod tag;
 mod health;
 mod state;
+mod net;
 mod node;
 pub mod broadcast;
 pub mod server;

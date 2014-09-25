@@ -22,6 +22,7 @@ pub struct GossipError {
 
 #[deriving(Show)]
 pub enum GossipErrorKind {
+    NodeUnreachable,
     NotListening,
     UnknownError,
     IoError(io::IoError)
