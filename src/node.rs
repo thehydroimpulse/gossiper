@@ -3,6 +3,7 @@ use std::task::TaskBuilder;
 use uuid::Uuid;
 use addr::Addr;
 use result::{GossipResult, GossipError, NotListening};
+use broadcast::Broadcast;
 
 /// A peer describes a member within the cluster/network that
 /// is not the current one.
@@ -19,12 +20,41 @@ pub enum NodeTaskMsg {
     Shutdown
 }
 
+#[deriving(Show, PartialEq)]
+pub enum NodeMsg {
+    BroadcastMsg(Broadcast)
+}
+
+pub struct NodeTask {
+    receiver: Receiver<NodeTaskMsg>,
+    senders: Vec<Sender<NodeMsg>>
+}
+
+impl NodeTask {
+    pub fn new(tx: Sender<NodeMsg>, rx: Receiver<NodeTaskMsg>) -> NodeTask {
+        NodeTask {
+            receiver: rx,
+            senders: vec![tx]
+        }
+    }
+
+    pub fn run(&mut self) {
+        for message in self.receiver.iter() {
+            match message {
+                Shutdown => break,
+                _ => {}
+            }
+        }
+    }
+}
+
 pub struct Node {
     id: Uuid,
     addr: Option<Addr>,
     members: Vec<Peer>,
     listening: bool,
-    sender: Option<Sender<NodeTaskMsg>>
+    sender: Option<Sender<NodeTaskMsg>>,
+    receiver: Option<Receiver<NodeMsg>>
 }
 
 impl Node {
@@ -41,7 +71,8 @@ impl Node {
             addr: None,
             members: Vec::new(),
             listening: false,
-            sender: None
+            sender: None,
+            receiver: None
         }
     }
 
@@ -61,16 +92,11 @@ impl Node {
     ///
     /// ```rust
     /// use gossip::Node;
-    /// use std::io::timer::sleep;
-    /// use std::time::duration::Duration;
     ///
     /// let mut node = Node::new();
     ///
     /// // Bind the node to the specified address:
     /// node.bind("127.0.0.1", 5899);
-    ///
-    /// // Wait for 10 milliseconds then shutdown.
-    /// sleep(Duration::milliseconds(10));
     ///
     /// // Kill the server:
     /// match node.shutdown() {
@@ -83,21 +109,18 @@ impl Node {
         self.addr = Some(Addr::new(ip, port));
 
         let (tx, rx) = channel();
+        let (local_tx, local_rx) = channel();
+        let tx_task = local_tx.clone();
 
-        TaskBuilder::new().named("NodeBackgroundProcess").spawn(proc() {
+        TaskBuilder::new().named("NodeTask").spawn(proc() {
             let (sender, receiver) = channel::<NodeTaskMsg>();
-
             tx.send(sender);
 
-            for m in receiver.iter() {
-                match m {
-                    Shutdown => break,
-                    _ => {}
-                }
-            }
+            NodeTask::new(tx_task, receiver).run();
         });
 
         self.sender = Some(rx.recv());
+        self.receiver = Some(local_rx);
     }
 
     /// Shutdown the current node.
@@ -135,5 +158,9 @@ mod test {
         let mut node = Node::new();
         node.bind("127.0.0.1", 6888);
         assert_eq!(node.listening(), true);
+        match node.shutdown() {
+            Ok(_) => {},
+            Err(err) => fail!("Failed to shutdown")
+        }
     }
 }
