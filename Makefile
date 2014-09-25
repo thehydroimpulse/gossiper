@@ -9,11 +9,15 @@ all: libgossip
 libgossip: $(SRC)
 	$(CARGO) build
 
-test: $(SRC)
-	sh ./test/check-style.sh
+sh: tests/compile.sh
+	chmod +x tests/compile.sh
+
+test: sh
+	sh ./tests/check-style.sh
+	./tests/compile.sh
 	$(CARGO) test
 
 clean:
 	@rm -rf target
 
-.PHONY: clean
+.PHONY: clean test

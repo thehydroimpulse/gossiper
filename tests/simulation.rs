@@ -1,6 +1,3 @@
-use server::Server;
-use proxy::Proxy;
-
 /// Describe a single simulation done by the system. A simulation allows much more control over
 /// the system, including having a default proxy networking system. One can peak into the
 /// system and assert the state and/or some combination of state.
@@ -26,11 +23,6 @@ use proxy::Proxy;
 ///                          to all recipients. See the reference paper for more details.
 pub struct Simulation {
     /// The number of servers that should be spun up during the simulation.
-    num_servers: uint,
-
-    /// The list of servers currently in the cluster.
-    servers: Vec<Server>,
-
-    proxy: Proxy
+    num_servers: uint
 }
 

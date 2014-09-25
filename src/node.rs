@@ -130,6 +130,17 @@ impl Node {
 
         Ok(())
     }
+
+    pub fn get_broadcast(&mut self) -> GossipResult<Broadcast> {
+        match self.receiver {
+            Some(ref rx) => Ok(rx.recv()),
+            None => Err(GossipError::new("Missing receiver", NotListening))
+        }
+    }
+
+    pub fn join(&mut self, peer: String) {
+
+    }
 }
 
 #[cfg(test)]
