@@ -9,4 +9,5 @@ RUN cd /usr/local/src && \
     mv gossiper-master gossiper && \
     cd gossiper
 
-RUN cd /usr/local/src/gossiper &&  cargo build
+RUN cd /usr/local/src/gossiper && cargo build
+CMD ./usr/local/src/gossiper/target/network
