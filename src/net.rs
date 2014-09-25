@@ -65,7 +65,7 @@ pub fn fast() {
         .arg("dev")
         .arg("eth0")
         .arg("root")
-        .spawn()
+        .spawn();
 }
 
 #[cfg(not(target_os = "linux"))]
