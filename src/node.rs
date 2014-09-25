@@ -20,18 +20,13 @@ pub enum NodeTaskMsg {
     Shutdown
 }
 
-#[deriving(Show, PartialEq)]
-pub enum NodeMsg {
-    BroadcastMsg(Broadcast)
-}
-
 pub struct NodeTask {
     receiver: Receiver<NodeTaskMsg>,
-    senders: Vec<Sender<NodeMsg>>
+    senders: Vec<Sender<Broadcast>>
 }
 
 impl NodeTask {
-    pub fn new(tx: Sender<NodeMsg>, rx: Receiver<NodeTaskMsg>) -> NodeTask {
+    pub fn new(tx: Sender<Broadcast>, rx: Receiver<NodeTaskMsg>) -> NodeTask {
         NodeTask {
             receiver: rx,
             senders: vec![tx]
@@ -54,7 +49,7 @@ pub struct Node {
     members: Vec<Peer>,
     listening: bool,
     sender: Option<Sender<NodeTaskMsg>>,
-    receiver: Option<Receiver<NodeMsg>>
+    receiver: Option<Receiver<Broadcast>>
 }
 
 impl Node {
