@@ -9,3 +9,6 @@ git = "https://github.com/rust-lang/uuid"
 
 [dependencies.msgpack]
 git = "https://github.com/mneumann/rust-msgpack"
+
+[dependencies.simulation]
+path = "simulation"

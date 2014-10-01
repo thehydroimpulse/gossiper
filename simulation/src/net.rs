@@ -7,7 +7,6 @@
 //! level, which important to have.
 
 use std::io::process::Command;
-use result::{GossipResult, GossipError, NodeUnreachable};
 
 /// Slow down the network using "tc".
 #[cfg(target_os = "linux")]
@@ -74,14 +73,14 @@ pub fn fast() {
 }
 
 #[experimental]
-pub fn is_reachable(ip: &str, port: u16) -> GossipResult<()> {
+pub fn is_reachable(ip: &str, port: u16) -> Result<(), &'static str> {
     match Command::new("ping")
         .arg("-w")
         .arg("1")
         .arg(format!("{}:{}", ip, port))
         .spawn() {
         Ok(_) => Ok(()),
-        Err(err) => Err(GossipError::new("Node is unreachable", NodeUnreachable))
+        Err(err) => Err("Node is unreachable")
     }
 }
 

@@ -1,5 +1,5 @@
 extern crate gossip;
+extern crate simulation;
 
-pub mod simulation;
 pub mod proxy;
 pub mod simulations;

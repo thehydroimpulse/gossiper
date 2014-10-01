@@ -13,31 +13,43 @@ pub struct Peer {
     addr: Addr
 }
 
-
+/// Messages from the task to the user.
 #[deriving(Show, PartialEq)]
-pub enum NodeTaskMsg {
-    Bind,
+pub enum TaskMessage {
     Shutdown
 }
 
+pub enum Message {
+    BroadcastMessage(Broadcast),
+    NodeMessage(TaskMessage)
+}
+
 pub struct NodeTask {
-    receiver: Receiver<NodeTaskMsg>,
-    senders: Vec<Sender<Broadcast>>
+    receiver: Receiver<TaskMessage>,
+    senders: Vec<Sender<Broadcast>>,
+    task_msg_tx: Vec<Sender<TaskMessage>>
 }
 
 impl NodeTask {
-    pub fn new(tx: Sender<Broadcast>, rx: Receiver<NodeTaskMsg>) -> NodeTask {
+    pub fn new(tx: Sender<Broadcast>, task_msg_tx: Sender<TaskMessage>, rx: Receiver<TaskMessage>)
+        -> NodeTask {
         NodeTask {
             receiver: rx,
-            senders: vec![tx]
+            senders: vec![tx],
+            task_msg_tx: vec![task_msg_tx]
         }
     }
 
     pub fn run(&mut self) {
-        for message in self.receiver.iter() {
-            match message {
-                Shutdown => break,
-                _ => {}
+        loop {
+            match self.receiver.recv() {
+                Shutdown => {
+                    for sender in self.task_msg_tx.iter() {
+                        sender.send(Shutdown);
+                    }
+
+                    break;
+                }
             }
         }
     }
@@ -45,100 +57,62 @@ impl NodeTask {
 
 pub struct Node {
     id: Uuid,
-    addr: Option<Addr>,
+    addr: Addr,
     members: Vec<Peer>,
-    listening: bool,
-    sender: Option<Sender<NodeTaskMsg>>,
-    receiver: Option<Receiver<Broadcast>>
+    sender: Sender<TaskMessage>,
+    broadcast_rx: Receiver<Broadcast>,
+    task_msg_rx: Receiver<TaskMessage>
 }
 
 impl Node {
-    /// Usage:
-    ///
-    /// ```rust
-    /// use gossip::Node;
-    ///
-    /// let node = Node::new();
-    /// ```
-    pub fn new() -> Node {
-        Node {
-            id: Uuid::new_v4(),
-            addr: None,
-            members: Vec::new(),
-            listening: false,
-            sender: None,
-            receiver: None
-        }
-    }
 
     /// Usage:
     ///
     /// ```rust
     /// use gossip::Node;
-    ///
-    /// let node = Node::new();
-    /// node.listening();
-    /// ```
-    pub fn listening(&self) -> bool {
-        self.listening
-    }
-
-    /// Usage:
-    ///
-    /// ```rust
-    /// use gossip::Node;
-    ///
-    /// let mut node = Node::new();
     ///
     /// // Bind the node to the specified address:
-    /// node.bind("127.0.0.1", 5899);
+    /// let mut node = Node::new("127.0.0.1", 5899);
     ///
     /// // Kill the server:
-    /// match node.shutdown() {
-    ///     Ok(_) => println!("Node has successfully been terminated"),
-    ///     Err(err) => fail!("Node failed to shutdown")
-    /// }
+    /// node.shutdown()
     /// ```
-    pub fn bind(&mut self, ip: &str, port: u16) {
-        self.listening = true;
-        self.addr = Some(Addr::new(ip, port));
-
+    pub fn new(ip: &str, port: u16) -> Node {
         let (tx, rx) = channel();
-        let (local_tx, local_rx) = channel();
-        let tx_task = local_tx.clone();
+        let (broadcast_tx, broadcast_rx) = channel();
+        let (task_msg_tx, task_msg_rx) = channel();
 
         TaskBuilder::new().named("NodeTask").spawn(proc() {
-            let (sender, receiver) = channel::<NodeTaskMsg>();
+            let (sender, receiver) = channel::<TaskMessage>();
             tx.send(sender);
 
-            NodeTask::new(tx_task, receiver).run();
+            let mut task = NodeTask::new(broadcast_tx, task_msg_tx, receiver);
+            task.run();
         });
 
-        self.sender = Some(rx.recv());
-        self.receiver = Some(local_rx);
+        Node {
+            id: Uuid::new_v4(),
+            addr: Addr::new(ip, port),
+            members: Vec::new(),
+            sender: rx.recv(),
+            broadcast_rx: broadcast_rx,
+            task_msg_rx: task_msg_rx
+        }
     }
 
     /// Shutdown the current node.
-    pub fn shutdown(&mut self) -> GossipResult<()> {
-        self.listening = false;
-
-        match self.sender {
-            Some(ref tx) => tx.send(Shutdown),
-            None => return Err(GossipError::new("The node is not running. Shutdown operation
-                                                failed!", NotListening))
-        }
-
-        Ok(())
+    pub fn shutdown(&mut self) {
+        self.sender.send(Shutdown);
     }
 
-    pub fn get_broadcast(&mut self) -> GossipResult<Broadcast> {
-        match self.receiver {
-            Some(ref rx) => Ok(rx.recv()),
-            None => Err(GossipError::new("Missing receiver", NotListening))
-        }
+    pub fn get_message(&mut self) {
     }
 
-    pub fn join(&mut self, peer: String) {
+    pub fn get_broadcast(&mut self) -> Broadcast {
+        self.broadcast_rx.recv()
+    }
+
+    pub fn join(&mut self, host: &str, port: u16) {
 
     }
 }
@@ -148,25 +122,15 @@ mod test {
     use super::*;
 
     #[test]
-    fn should_create_node_without_listening() {
-        let node = Node::new();
-        assert_eq!(node.listening(), false);
-    }
-
-    #[test]
     fn empty_member_set() {
-        let node = Node::new();
+        let mut node = Node::new("localhost", 5888);
         assert_eq!(node.members.len(), 0);
+        node.shutdown();
     }
 
     #[test]
     fn bind_listening() {
-        let mut node = Node::new();
-        node.bind("127.0.0.1", 6888);
-        assert_eq!(node.listening(), true);
-        match node.shutdown() {
-            Ok(_) => {},
-            Err(err) => fail!("Failed to shutdown")
-        }
+        let mut node = Node::new("127.0.0.1", 6888);
+        node.shutdown();
     }
 }
