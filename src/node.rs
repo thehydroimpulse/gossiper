@@ -46,7 +46,8 @@ struct AcceptorTask {
 }
 
 impl AcceptorTask {
-    pub fn new(host: &str, port: u16, server_tx: Sender<Broadcast>, inter_tx: Sender<Sender<Broadcast>>) -> AcceptorTask {
+    pub fn new(host: &str, port: u16, server_tx: Sender<Broadcast>,
+               inter_tx: Sender<Sender<Broadcast>>) -> AcceptorTask {
         let listener = TcpListener::bind(host, port).unwrap();
         let (tx, rx) = channel();
 
