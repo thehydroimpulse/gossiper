@@ -37,6 +37,10 @@ impl Broadcast {
             committed: HashSet::new()
         }
     }
+
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
 }
 
 #[cfg(test)]
