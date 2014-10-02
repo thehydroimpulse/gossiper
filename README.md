@@ -30,30 +30,19 @@ doesn't include any transport mechanism, so it's purely in-memory. A TCP transpo
 is shipped with Gossip which we'll get to later on.
 
 ```rust
-use gossip::{Server, Shutdown};
-use std::time::duration::Duration;
+use gossip::{Node};
 
 fn main() {
-  // Create a new server task. This spawns a separate task
-  // where the gossip protocol will operate in. The address and port
-  // will only be used if a transport is defined.
-  let mut server = Server::create("127.0.0.1", 5666);
+    // Create a new Node.
+    let mut node = Node::new();
 
-  // Shutdown in the specified time in seconds. Since this is an example,
-  // we'll just shutdown immediately because we have nothing else to do.
-  server.shutdown_in(Duration::seconds(1));
+    // Bind on a specific host/port.
+    node.listen("localhost", 5999).unwrap();
 
-  // Wait for new messages. This will block the main task until the
-  // server has been shutdown.
-  loop {
-       match server.recv() {
-           Shutdown(reason) => {
-               println!("The server is shutting down. Reason: {}", reason);
-               break;
-           },
-           _ => {}
-       }
-  }
+    // Loop through any broadcasts that we receive.
+    for (broadcast, mut res) in node.incoming() {
+        // ...
+    }
 }
 ```
 

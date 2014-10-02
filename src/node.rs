@@ -202,13 +202,13 @@ impl Node {
     ///
     ///     node.listen("localhost", 4888).unwrap();
     ///
-    ///     for (broadcast, mut res) in node.incoming_iter() {
+    ///     for (broadcast, mut res) in node.incoming() {
     ///         println!("Broadcast ...");
     ///         // ...
     ///     }
     /// });
     /// ```
-    pub fn incoming_iter(&mut self) -> Incoming {
+    pub fn incoming(&mut self) -> Incoming {
         let (tx, rx) = channel();
         let incoming = Incoming::new(self.tx.clone(), tx);
 
