@@ -57,7 +57,8 @@ pub struct Incoming {
 }
 
 impl Incoming {
-    pub fn new(node_tx: Sender<BroadcastFrom>, sender: Sender<Sender<(Broadcast, Stream)>>) -> Incoming {
+    pub fn new(node_tx: Sender<BroadcastFrom>, 
+               sender: Sender<Sender<(Broadcast, Stream)>>) -> Incoming {
         let (tx, rx) = channel();
 
         sender.send(tx.clone());
