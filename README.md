@@ -39,9 +39,15 @@ fn main() {
     // Bind on a specific host/port.
     node.listen("localhost", 5999).unwrap();
 
+    // Join an existing cluster, given a peer.
+    node.peer("localhost", 4555).unwrap();
+
     // Loop through any broadcasts that we receive.
     for (broadcast, mut res) in node.incoming() {
         // ...
+        // Send an OK broadcast back, acknowledging the initial
+        // broadcast.
+        res.ok();
     }
 }
 ```
