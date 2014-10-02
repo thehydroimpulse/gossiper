@@ -4,7 +4,7 @@ use uuid::Uuid;
 use std::collections::hashmap::HashSet;
 
 use result::GossipResult;
-use server::Server;
+use node::Stream;
 
 /// Broadcast represents a single bi-directional communication with two
 /// nodes within the cluster. The communication does **not** need to be
@@ -12,7 +12,7 @@ use server::Server;
 ///
 /// Each broadcast is tagged with a unique ID so that we may track
 /// which node has received a given broadcast.
-#[deriving(Show, PartialEq, Clone)]
+#[deriving(PartialEq, Clone)]
 pub struct Broadcast {
     /// A unique id for the broadcast. This allows the servers
     /// to talk about a unique broadcast in unison.

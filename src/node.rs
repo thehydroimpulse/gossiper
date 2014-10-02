@@ -1,13 +1,90 @@
 use std::task::TaskBuilder;
 use std::io::{TcpListener, TcpStream, Acceptor, Listener};
 use std::io::net::tcp::TcpAcceptor;
-use std::collections::HashMap;
+use std::collections::{HashSet, HashMap};
+use std::io::MemWriter;
 
 use uuid::Uuid;
 use addr::Addr;
-use result::{GossipResult, GossipError, NotListening};
 use broadcast::Broadcast;
-use incoming::Incoming;
+use result::{GossipResult, GossipError, NotListening};
+
+pub type Callback = (Broadcast, Response);
+pub type BroadcastFrom = (Peer, Broadcast);
+
+pub struct Response {
+    id: Uuid,
+    stream: Stream,
+    wr: MemWriter
+}
+
+impl Response {
+    pub fn new(id: Uuid, stream: Stream) -> Response {
+        Response {
+            id: id,
+            stream: stream,
+            wr: MemWriter::new()
+        }
+    }
+
+    /// Acknowledge the incoming broadcast with a simple OK
+    /// message back. Responses aren't always required, but it's
+    /// often very useful to have a nice short way of saying
+    /// "Got the message, it's all good!".
+    ///
+    /// This takes `self` as a value because we don't
+    /// allow multiple responses. So the response will be moved and
+    /// further responses won't be possible.
+    pub fn ok(mut self) -> GossipResult<()> {
+        write!(self.stream.stream, "{},OK", self.id);
+        Ok(())
+    }
+}
+
+#[unsafe_destructor]
+impl Drop for Response {
+    /// Handle the response on the drop call.
+    fn drop(&mut self) {
+    }
+}
+
+/// An iterator that receives new broadcasts and iterates over them.
+pub struct Incoming {
+    node_tx: Sender<BroadcastFrom>,
+    tx: Sender<(Broadcast, Stream)>,
+    rx: Receiver<(Broadcast, Stream)>,
+    listening: bool
+}
+
+impl Incoming {
+    pub fn new(node_tx: Sender<BroadcastFrom>, sender: Sender<Sender<(Broadcast, Stream)>>) -> Incoming {
+        let (tx, rx) = channel();
+
+        sender.send(tx.clone());
+
+        Incoming {
+            node_tx: node_tx,
+            tx: tx,
+            rx: rx,
+            listening: true
+        }
+    }
+}
+
+impl Iterator<Callback> for Incoming {
+
+    /// TODO: Handle the response with the Drop trait. This means
+    ///       we'll need to have a reference to the `Stream`.
+    fn next(&mut self) -> Option<Callback> {
+        if self.listening {
+            let (broadcast, stream) = self.rx.recv();
+            let id = broadcast.id().clone();
+            Some((broadcast, Response::new(id, stream)))
+        } else {
+            None
+        }
+    }
+}
 
 /// A dedicated Rust task to manage a single `TcpStream`. Each
 /// stream is then associated to a given peer (although the peer
@@ -17,11 +94,11 @@ use incoming::Incoming;
 /// AcceptorTask which can communicate with other StreamTasks.
 struct StreamTask {
     peer: Option<Peer>,
-    stream: TcpStream
+    pub stream: Stream
 }
 
 impl StreamTask {
-    pub fn new(stream: TcpStream) -> StreamTask {
+    pub fn new(stream: Stream) -> StreamTask {
         StreamTask {
             peer: None,
             stream: stream
@@ -29,7 +106,27 @@ impl StreamTask {
     }
 
     pub fn incoming(&mut self) {
+    }
+}
 
+#[deriving(Clone)]
+pub struct Stream {
+    stream: TcpStream,
+    peer: Option<Peer>
+}
+
+impl Stream {
+    pub fn new(stream: TcpStream) -> Stream {
+        Stream {
+            stream: stream,
+            peer: None
+        }
+    }
+}
+
+impl Iterator<Callback> for Stream {
+    fn next(&mut self) -> Option<Callback> {
+        None
     }
 }
 
@@ -40,13 +137,18 @@ impl StreamTask {
 /// protocol.
 struct AcceptorTask {
     acceptor: TcpAcceptor,
-    server_tx: Sender<Broadcast>,
+    server_tx: Sender<Directive>,
     tx: Sender<Broadcast>,
     rx: Receiver<Broadcast>
 }
 
+enum Directive {
+    StreamDirective(Stream),
+    BroadcastDirective(Broadcast)
+}
+
 impl AcceptorTask {
-    pub fn new(host: &str, port: u16, server_tx: Sender<Broadcast>,
+    pub fn new(host: &str, port: u16, server_tx: Sender<Directive>,
                inter_tx: Sender<Sender<Broadcast>>) -> AcceptorTask {
         let listener = TcpListener::bind(host, port).unwrap();
         let (tx, rx) = channel();
@@ -64,9 +166,16 @@ impl AcceptorTask {
     pub fn run(&mut self) {
         for stream in self.acceptor.incoming() {
             match stream {
-                Ok(stream) => spawn(proc() {
-                    StreamTask::new(stream).incoming();
-                }),
+                Ok(s) => {
+                    // Handle the joining here...
+                    let stream_send = s.clone();
+                    let server = self.server_tx.clone();
+                    spawn(proc() {
+                        let stream = Stream::new(stream_send);
+                        server.send(StreamDirective(stream.clone()));
+                        StreamTask::new(stream).incoming();
+                    });
+                },
                 Err(e) => println!("Error: {}", e)
             }
         }
@@ -74,10 +183,10 @@ impl AcceptorTask {
 }
 
 struct ServerTask {
-    streams: HashMap<Peer, Sender<Broadcast>>,
+    streams: HashMap<Peer, TcpStream>,
     acceptor_tx: Sender<Broadcast>,
-    tx: Sender<Broadcast>,
-    rx: Receiver<Broadcast>
+    tx: Sender<Directive>,
+    rx: Receiver<Directive>
 }
 
 impl ServerTask {
@@ -103,17 +212,44 @@ impl ServerTask {
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn broadcast(&self, peer: &Peer) -> GossipResult<()> {
+        Ok(())
+    }
 
+    pub fn run(&mut self) {
+        for signal in self.rx.iter() {
+            match signal {
+                StreamDirective(stream) => {
+                    // self.streams.insert(peer, stream);
+                },
+                BroadcastDirective(broadcast) => {}
+            }
+        }
     }
 }
 
 /// A peer describes a member within the cluster/network that
 /// is not the current one.
-#[deriving(Show, PartialEq, Hash, Eq)]
+#[deriving(Clone, Show, PartialEq, Hash, Eq)]
 pub struct Peer {
     id: Uuid,
     addr: Addr
+}
+
+impl Peer {
+    pub fn new(id: Uuid, host: &str, port: u16) -> Peer {
+        Peer {
+            id: id,
+            addr: Addr::new(host, port)
+        }
+    }
+
+    pub fn empty() -> Peer {
+        Peer {
+            id: Uuid::new_v4(),
+            addr: Addr::new("localhost", 3444)
+        }
+    }
 }
 
 /// A `Node` is a single member within the gossip protocol. Nodes that
@@ -136,7 +272,7 @@ pub struct Node {
     /// information about each Node. This doesn't, however, contain connection
     /// information and what not.
     members: Vec<Peer>,
-    incoming_tx: Option<Sender<Broadcast>>,
+    incoming_tx: Option<Sender<(Broadcast, Stream)>>,
     tx: Sender<(Peer, Broadcast)>,
     rx: Receiver<(Peer, Broadcast)>
 }

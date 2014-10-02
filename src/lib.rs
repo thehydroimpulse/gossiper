@@ -38,7 +38,6 @@ extern crate sync;
 extern crate time;
 extern crate msgpack;
 
-pub use server::{Server, Message};
 pub use result::{GossipResult, GossipError};
 pub use node::{Node};
 pub use addr::Addr;
@@ -50,6 +49,3 @@ mod health;
 mod state;
 mod node;
 mod broadcast;
-mod server;
-mod response;
-mod incoming;
