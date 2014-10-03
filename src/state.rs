@@ -2,7 +2,6 @@ use std::collections::hashmap::HashSet;
 use health::{Health, Yellow};
 use broadcast::Broadcast;
 
-#[deriving(PartialEq, Clone)]
 pub struct State {
     eager: HashSet<String>,
     lazy: HashSet<String>,

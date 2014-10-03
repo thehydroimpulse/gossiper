@@ -138,18 +138,18 @@ impl Iterator<Callback> for Stream {
 /// protocol.
 struct AcceptorTask {
     acceptor: TcpAcceptor,
-    server_tx: Sender<Directive>,
+    server_tx: Sender<TaskMessage>,
     tx: Sender<Broadcast>,
     rx: Receiver<Broadcast>
 }
 
-enum Directive {
-    StreamDirective(Stream),
-    BroadcastDirective(Broadcast)
+enum TaskMessage {
+    StreamMsg(Stream),
+    BroadcastMsg(Broadcast)
 }
 
 impl AcceptorTask {
-    pub fn new(host: &str, port: u16, server_tx: Sender<Directive>,
+    pub fn new(host: &str, port: u16, server_tx: Sender<TaskMessage>,
                inter_tx: Sender<Sender<Broadcast>>) -> AcceptorTask {
         let listener = TcpListener::bind(host, port).unwrap();
         let (tx, rx) = channel();
@@ -173,7 +173,7 @@ impl AcceptorTask {
                     let server = self.server_tx.clone();
                     spawn(proc() {
                         let stream = Stream::new(stream_send);
-                        server.send(StreamDirective(stream.clone()));
+                        server.send(StreamMsg(stream.clone()));
                         StreamTask::new(stream).incoming();
                     });
                 },
@@ -186,8 +186,8 @@ impl AcceptorTask {
 struct ServerTask {
     streams: HashMap<Peer, TcpStream>,
     acceptor_tx: Sender<Broadcast>,
-    tx: Sender<Directive>,
-    rx: Receiver<Directive>
+    tx: Sender<TaskMessage>,
+    rx: Receiver<TaskMessage>
 }
 
 impl ServerTask {
@@ -218,12 +218,12 @@ impl ServerTask {
     }
 
     pub fn run(&mut self) {
-        for signal in self.rx.iter() {
-            match signal {
-                StreamDirective(stream) => {
+        for msg in self.rx.iter() {
+            match msg {
+                StreamMsg(stream) => {
                     // self.streams.insert(peer, stream);
                 },
-                BroadcastDirective(broadcast) => {}
+                BroadcastMsg(broadcast) => {}
             }
         }
     }

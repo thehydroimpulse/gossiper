@@ -42,9 +42,9 @@ pub use result::{GossipResult, GossipError};
 pub use node::{Node};
 pub use addr::Addr;
 
-pub mod result;
-pub mod addr;
-pub mod tag;
+mod result;
+mod addr;
+mod tag;
 mod health;
 mod state;
 mod node;

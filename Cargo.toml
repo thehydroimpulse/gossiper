@@ -8,7 +8,7 @@ authors = [ "Daniel Fagnan <dnfagnan@gmail.com>" ]
 git = "https://github.com/rust-lang/uuid"
 
 [dependencies.msgpack]
-git = "https://github.com/mneumann/rust-msgpack"
+git = "https://github.com/thehydroimpulse/rust-msgpack"
 
 [dependencies.simulation]
 path = "simulation"
