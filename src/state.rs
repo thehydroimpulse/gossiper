@@ -1,5 +1,5 @@
 use std::collections::hashmap::HashSet;
-use health::{Health, Yellow};
+use protocol::{Health, Yellow};
 use broadcast::Broadcast;
 
 pub struct State {
@@ -25,7 +25,7 @@ impl State {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use health::Yellow;
+    use protocol::Yellow;
 
     #[test]
     fn default_state() {

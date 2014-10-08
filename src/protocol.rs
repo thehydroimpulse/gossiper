@@ -2,50 +2,23 @@ use std::task::TaskBuilder;
 use std::io::{TcpListener, TcpStream, Acceptor, Listener};
 use std::io::net::tcp::TcpAcceptor;
 use std::collections::{HashSet, HashMap};
-use std::io::MemWriter;
 
 use uuid::Uuid;
-use addr::Addr;
+use stream::{Stream, Response, SockAddr, Callback, BroadcastFrom};
 use broadcast::Broadcast;
 use result::{GossipResult, GossipError, NotListening};
 
-pub type Callback = (Broadcast, Response);
-pub type BroadcastFrom = (Peer, Broadcast);
-
-pub struct Response {
-    id: Uuid,
-    stream: Stream,
-    wr: MemWriter
-}
-
-impl Response {
-    pub fn new(id: Uuid, stream: Stream) -> Response {
-        Response {
-            id: id,
-            stream: stream,
-            wr: MemWriter::new()
-        }
-    }
-
-    /// Acknowledge the incoming broadcast with a simple OK
-    /// message back. Responses aren't always required, but it's
-    /// often very useful to have a nice short way of saying
-    /// "Got the message, it's all good!".
-    ///
-    /// This takes `self` as a value because we don't
-    /// allow multiple responses. So the response will be moved and
-    /// further responses won't be possible.
-    pub fn ok(mut self) -> GossipResult<()> {
-        write!(self.stream.stream, "{},OK", self.id);
-        Ok(())
-    }
-}
-
-#[unsafe_destructor]
-impl Drop for Response {
-    /// Handle the response on the drop call.
-    fn drop(&mut self) {
-    }
+/// A health represents the current state of the cluster. This will be extremely useful
+/// to ping the health of a cluster and determine the high-level status of it.
+///
+/// Green = Perfect state.
+/// Yellow = Nodes are failing, but the cluster is still operational.
+/// Red = Not good. Cluster might be completely dead.
+#[deriving(Show, PartialEq, Clone)]
+pub enum Health {
+    Green,
+    Yellow,
+    Red
 }
 
 /// An iterator that receives new broadcasts and iterates over them.
@@ -110,26 +83,6 @@ impl StreamTask {
     }
 }
 
-#[deriving(Clone)]
-pub struct Stream {
-    stream: TcpStream,
-    peer: Option<Peer>
-}
-
-impl Stream {
-    pub fn new(stream: TcpStream) -> Stream {
-        Stream {
-            stream: stream,
-            peer: None
-        }
-    }
-}
-
-impl Iterator<Callback> for Stream {
-    fn next(&mut self) -> Option<Callback> {
-        None
-    }
-}
 
 /// A dedicated task to handle the incoming connections
 /// over a tcp socket (called streams). This task does
@@ -234,21 +187,21 @@ impl ServerTask {
 #[deriving(Clone, Show, PartialEq, Hash, Eq)]
 pub struct Peer {
     id: Uuid,
-    addr: Addr
+    addr: SockAddr
 }
 
 impl Peer {
     pub fn new(id: Uuid, host: &str, port: u16) -> Peer {
         Peer {
             id: id,
-            addr: Addr::new(host, port)
+            addr: SockAddr::new(host, port)
         }
     }
 
     pub fn empty() -> Peer {
         Peer {
             id: Uuid::new_v4(),
-            addr: Addr::new("localhost", 3444)
+            addr: SockAddr::new("localhost", 3444)
         }
     }
 }

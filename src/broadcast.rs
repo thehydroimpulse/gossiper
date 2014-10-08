@@ -5,14 +5,7 @@ use std::collections::hashmap::HashSet;
 use std::io::MemReader;
 
 use result::{GossipResult, GossipError, UnknownError, io_err};
-use node::Stream;
-
-#[deriving(PartialEq, Show)]
-#[repr(C)]
-pub enum Format {
-    MsgPack = 0,
-    Json = 1
-}
+use stream::Stream;
 
 #[deriving(PartialEq, Show)]
 pub struct Version(u8);
@@ -32,8 +25,7 @@ pub struct Version(u8);
 /// ```notrust
 /// bitdata RawBroadcast {
 ///     RawBroadcast {
-///         version: u4,
-///         format: u4, // Format and version can be read in one operation.
+///         version: u8,
 ///         tag_size: u32,
 ///         tag: &[u8],
 ///         data_size: u32,
@@ -52,12 +44,11 @@ pub struct Broadcast {
     /// the response (if applicable).
     id: Uuid,
     version: Version,
-    format: Format,
     /// A tag represents the type of message it is without needing a physical type to decode it to.
     /// Since we may not always have that information.
     tag: String,
     /// The raw bytes of the full broadcast.
-    reader: Vec<u8>,
+    reader: MemReader,
     /// A set of servers that have seen/committed the broadcast.
     committed: HashSet<String>
 }
@@ -68,18 +59,12 @@ impl Broadcast {
     pub fn new(bytes: Vec<u8>) -> GossipResult<Broadcast> {
         let mut reader = MemReader::new(bytes.clone());
         let version = try!(reader.read_byte().map_err(io_err));
-        let format = match try!(reader.read_byte().map_err(io_err)) {
-            0 => MsgPack,
-            1 => Json,
-            _ => return Err(GossipError::new("Unknown format.", UnknownError))
-        };
         let tag = "foo".to_string();
         Ok(Broadcast {
             id: Uuid::new_v4(),
             version: Version(version),
-            format: format,
             tag: tag,
-            reader: bytes,
+            reader: reader,
             committed: HashSet::new()
         })
     }
@@ -98,4 +83,14 @@ mod test {
     use super::*;
     use result::GossipResult;
 
+    #[test]
+    fn parse_broadcast() {
+        let mut bytes = vec![1u8];
+        bytes = bytes.append(b"foo");
+        bytes = bytes.append(&[1u8,2,3]);
+        let broadcast = Broadcast::new(bytes).unwrap();
+        assert_eq!(broadcast.tag, "foo".to_string());
+        let Version(ver) = broadcast.version;
+        assert_eq!(ver, 1u8);
+    }
 }
